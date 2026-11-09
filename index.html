@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="tr"><head><meta charset="utf-8"><title>World Conquest</title>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <style>
 :root{color-scheme:dark;--g:rgba(255,255,255,.08);--b:rgba(255,255,255,.18);--t:#eaf2ff;--m:#9fb2d0;--ac:#4fd1ff}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -11,16 +11,20 @@ canvas{position:fixed;inset:0;width:100%;height:100%;touch-action:none;cursor:cr
 .glass{background:var(--g);backdrop-filter:blur(12px) saturate(150%);-webkit-backdrop-filter:blur(12px) saturate(150%);border:1px solid var(--b);border-radius:18px;box-shadow:0 10px 36px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.28)}
 #hud,#ctl,#panel,#hint{display:none}
 body.play #hud,body.play #ctl,body.play #panel{display:flex}body.play #hint{display:block}
-#hud{position:fixed;left:12px;top:calc(12px + env(safe-area-inset-top,0px));gap:16px;align-items:center;padding:10px 16px;font-size:13px;color:var(--m);flex-wrap:wrap;max-width:calc(100% - 150px)}
+#hud{position:fixed;left:12px;top:calc(12px + env(safe-area-inset-top,0px));gap:14px;align-items:center;padding:10px 16px;font-size:13px;color:var(--m);flex-wrap:wrap;max-width:calc(100% - 220px)}
 #hud b{color:var(--t)}.brand{letter-spacing:.14em;font-size:12px}
-#ctl{position:fixed;right:12px;top:calc(12px + env(safe-area-inset-top,0px));gap:4px;padding:6px}
+#ctl{position:fixed;right:12px;top:calc(12px + env(safe-area-inset-top,0px));gap:4px;padding:6px;align-items:center}
+#spd{display:flex;gap:3px}
 button,select{font:inherit;color:var(--t);background:rgba(255,255,255,.07);border:1px solid var(--b);border-radius:12px;padding:8px 12px;cursor:pointer;transition:background .12s,transform .08s;touch-action:manipulation;user-select:none}
 button:hover:not(:disabled){background:rgba(255,255,255,.18)}button:active:not(:disabled){transform:scale(.95);background:rgba(79,209,255,.35)}
 button:disabled{opacity:.4;cursor:not-allowed}button.on{background:rgba(79,209,255,.3);border-color:var(--ac)}
 select option{background:#101830}
+.lbl{font-style:normal}
 #panel{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));gap:10px;padding:10px;align-items:stretch;max-width:calc(100% - 16px);overflow-x:auto}
 #ups{display:flex;gap:8px}.up{text-align:left;min-width:118px;line-height:1.35}.up small{display:block;color:var(--m);font-size:11px}.up.dis{opacity:.45}
-.sep{width:1px;background:var(--b);flex:none}.col{display:flex;flex-direction:column;gap:6px;flex:none}.col button{padding:6px 10px;font-size:12px}
+.sep{width:1px;background:var(--b);flex:none}
+.col{display:flex;flex-direction:column;gap:6px;flex:none}
+.col button{padding:6px 10px;font-size:12px;display:flex;align-items:center;justify-content:center;gap:5px}
 #hint{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(112px + env(safe-area-inset-bottom,0px));font-size:12px;color:var(--m);pointer-events:none;text-align:center;width:92%;text-shadow:0 1px 6px #000}
 #tip{position:fixed;pointer-events:none;padding:8px 12px;font-size:12px;display:none;z-index:5}
 #toast{position:fixed;left:50%;transform:translateX(-50%);top:calc(70px + env(safe-area-inset-top,0px));padding:10px 16px;font-size:13px;z-index:30;max-width:92%;text-align:center}
@@ -40,7 +44,7 @@ input:focus{border-color:var(--ac)}
 .pl{display:flex;gap:8px;align-items:center;font-size:13px;padding:6px 8px;border-radius:10px;background:rgba(255,255,255,.05)}
 .pl i{width:12px;height:12px;border-radius:50%;flex:none}.pl span{color:var(--m);flex:1;text-align:right;font-size:12px}.pl em{font-style:normal}
 .code{font-size:22px;letter-spacing:.18em;font-weight:700;text-transform:uppercase;text-align:center}
-#aid,#foeBtn{display:none;position:fixed;right:12px;flex-direction:column;align-items:center;gap:2px;padding:10px 12px;z-index:3;border-radius:16px;min-width:124px}
+#aid,#foeBtn{display:none;position:fixed;right:12px;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:10px 12px;z-index:3;border-radius:16px;min-width:124px}
 #aid{top:calc(50% - 34px);transform:translateY(-50%)}
 #foeBtn{top:calc(50% + 34px);transform:translateY(-50%)}
 body.play #aid,body.play #foeBtn{display:flex}
@@ -57,33 +61,48 @@ body.play #aid,body.play #foeBtn{display:flex}
 #err{color:#ff8a9a;font-size:12px}
 #rank{display:none;position:fixed;right:12px;top:calc(64px + env(safe-area-inset-top,0px));padding:8px 10px;font-size:12px;z-index:2}body.play #rank{display:block}
 #rank div{display:flex;gap:6px;align-items:center;white-space:nowrap;padding:1px 0}#rank i{width:9px;height:9px;border-radius:50%;flex:none}#rank span{margin-left:auto;padding-left:12px;color:var(--m)}
+
+/* MOBİL KOMPAKT & İKON GÖRÜNÜMÜ */
 @media (max-width:720px){
  #rank{display:none!important}
- #hud{gap:8px 12px;padding:8px 12px;font-size:11px;max-width:calc(100% - 118px)}.brand{display:none}
- #ctl{padding:4px}#ctl button{padding:6px 9px}
+ .brand,.lbl,.up small.d{display:none!important}
+ #hud{left:6px;top:calc(6px + env(safe-area-inset-top,0px));gap:4px 8px;padding:5px 9px;font-size:10px;border-radius:12px;max-width:calc(100% - 175px)}
+ #ctl{right:6px;top:calc(6px + env(safe-area-inset-top,0px));padding:3px;gap:2px;border-radius:12px}
+ #spd{gap:2px}
+ #ctl button{padding:4px 6px;font-size:10px;border-radius:8px;min-width:24px;height:26px;display:inline-flex;align-items:center;justify-content:center}
  #hint{display:none!important}
- #panel{gap:6px;padding:6px;border-radius:14px}.up{min-width:104px;padding:6px 8px;font-size:11px}.col button{font-size:11px;padding:5px 8px}
- #aid,#foeBtn{padding:7px 9px;min-width:104px;font-size:12px}
- #foePanel{right:12px;top:auto;bottom:calc(110px + env(safe-area-inset-bottom,0px));transform:none;width:210px;max-height:220px}
- .card{padding:16px}.card h1{font-size:22px}#list{max-height:140px}
+ #panel{bottom:calc(6px + env(safe-area-inset-bottom,0px));gap:4px;padding:5px;border-radius:13px;max-width:calc(100% - 10px)}
+ #ups{gap:4px}
+ .up{min-width:52px;padding:4px 5px;font-size:10px;border-radius:9px;text-align:center;line-height:1.2}
+ .up small.c{font-size:9px;margin-top:1px}
+ . col{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+ .col button{padding:4px;font-size:12px;width:28px;height:26px;border-radius:7px}
+ #aid,#foeBtn{right:6px;min-width:0;width:36px;height:36px;padding:0;border-radius:50%;font-size:15px}
+ #aid{top:calc(50% - 22px)}
+ #foeBtn{top:calc(50% + 22px)}
+ #aid small{display:none!important}
+ #foeBtn small{font-size:8px;line-height:1;margin-top:-2px;font-weight:700;color:var(--t)}
+ #foePanel{right:48px;top:50%;transform:translateY(-50%);width:185px;max-height:210px;padding:8px;border-radius:14px}
+ .card{padding:14px;gap:8px}.card h1{font-size:20px}#list{max-height:130px}
 }
 </style></head><body>
 <canvas id="c0"></canvas><canvas id="c1"></canvas><canvas id="c"></canvas>
-<div id="hud" class="glass"><b class="brand">🌍 WORLD CONQUEST</b><span>Ülke <b id="sC">0</b></span><span>Asker <b id="sT">0</b></span><span>Altın <b id="sG">0</b></span><span>Hat <b id="sL">0</b></span></div>
-<div id="ctl" class="glass"><span id="spd"><button data-s="0">⏸</button><button data-s="1" class="on">1×</button><button data-s="2">2×</button><button data-s="4">4×</button></span><button id="mute">🔊</button><button id="zi">＋</button><button id="zo">－</button></div>
+<div id="hud" class="glass"><b class="brand">🌍 WORLD CONQUEST</b><span>🏳️<em class="lbl"> Ülke</em> <b id="sC">0</b></span><span>⚔️<em class="lbl"> Asker</em> <b id="sT">0</b></span><span>🪙<em class="lbl"> Altın</em> <b id="sG">0</b></span><span>🔗<em class="lbl"> Hat</em> <b id="sL">0</b></span></div>
+<div id="ctl" class="glass"><span id="spd"><button data-s="0" title="Duraklat">⏸</button><button data-s="1" class="on" title="1x Hız">1×</button><button data-s="2" title="2x Hız">2×</button><button data-s="4" title="4x Hız">4×</button></span><button id="mute" title="Ses">🔊</button><button id="zi" title="Yakınlaştır">＋</button><button id="zo" title="Uzaklaştır">－</button><button id="fs" title="Tam Ekran">⛶</button></div>
 <div id="hint">Ülkenden hedefe <b>sürükle-bırak</b> = kesilene kadar <b>sürekli asker akışı</b> (kendi ülkene de olur) · Shift+sürükle: tek seferlik %50 dalga · Sağ tık / ✕: hattı kes · Renk: <span style="color:#5aa9ff">mavi zayıf</span> · <span style="color:#4ade80">yeşil denk</span> · <span style="color:#ff5d73">kırmızı üstün</span></div>
-<div id="panel" class="glass"><div id="ups"></div><div class="sep"></div><div class="col"><button id="selAll">Hepsini seç</button><button id="clr">Temizle</button><button id="boxb">▭ Kutu seç</button><button id="cutall">✕ Hatları kes</button></div></div>
+<div id="panel" class="glass"><div id="ups"></div><div class="sep"></div><div class="col"><button id="selAll" title="Hepsini seç"><span>☑️</span><em class="lbl">Hepsini seç</em></button><button id="clr" title="Temizle"><span>🧹</span><em class="lbl">Temizle</em></button><button id="boxb" title="Kutu seç"><span>▭</span><em class="lbl">Kutu seç</em></button><button id="cutall" title="Hatları kes"><span>✕</span><em class="lbl">Hatları kes</em></button></div></div>
 <div id="tip" class="glass"></div>
 <div id="rank" class="glass"></div>
-<button id="aid" class="glass"><span>🛟 Yardım Gönder</span><small id="aidT"></small></button>
-<button id="foeBtn" class="glass"><span>🎯 Kalan Düşman</span><small id="foeT">0 ülke</small></button>
+<button id="aid" class="glass" title="Yardım Gönder"><span>🛟<em class="lbl"> Yardım Gönder</em></span><small id="aidT"></small></button>
+<button id="foeBtn" class="glass" title="Kalan Düşman Ülkeleri"><span>🎯<em class="lbl"> Kalan Düşman</em></span><small id="foeT">0</small></button>
 <div id="foePanel" class="glass" hidden>
  <div class="foeHead"><b>Düşman Ülkeleri</b><button id="foeNext">Bul ➔</button></div>
  <div id="foeList"></div>
 </div>
 <div id="toast" class="glass" hidden></div>
 
-<div id="menu" class="modal"><div class="glass card"><h1>WORLD CONQUEST</h1>
+<div id="menu" class="modal"><div class="glass card">
+<div class="row" style="justify-content:space-between"><h1>WORLD CONQUEST</h1><button id="fsMenu" title="Tam Ekran Modu" style="flex:none;padding:6px 10px">⛶ Tam Ekran</button></div>
 <p>Dünya haritasında bir ülke seç, üretimini büyüt, asker akış hatları kur ve dünyayı fethet.</p>
 <button id="bSolo" class="primary">Tek kişilik (botlara karşı)</button>
 <div class="row"><input id="jcode" placeholder="Oda kodu yazın (örn: 1453)" maxlength="12" autocapitalize="characters"></div>
@@ -108,6 +127,37 @@ body.play #aid,body.play #foeBtn{display:flex}
 const $=id=>document.getElementById(id);
 addEventListener('error',e=>{const t=$('err');if(t){t.hidden=false;t.textContent='Hata: '+e.message}});
 const S=1000/180,NS=6;
+
+/* Tam Ekran (Fullscreen) Kontrolü */
+function toggleFS(){
+ const d=document,el=d.documentElement;
+ const isFS=d.fullscreenElement||d.webkitFullscreenElement||d.msFullscreenElement;
+ if(!isFS){
+  const req=el.requestFullscreen||el.webkitRequestFullscreen||el.msRequestFullscreen;
+  if(req){
+   try{
+    const p=req.call(el);
+    if(p&&p.catch)p.catch(()=>toast('Tam ekran başlatılamadı'));
+   }catch(_){toast('Tam ekran desteklenmiyor')}
+  }else{
+   toast('Cihazınızda tam ekran için tarayıcı menüsünden "Ana Ekrana Ekle"yi kullanabilirsiniz');
+  }
+ }else{
+  const ex=d.exitFullscreen||d.webkitExitFullscreen||d.msExitFullscreen;
+  if(ex){try{ex.call(d)}catch(_){}}
+ }
+}
+function syncFSBtn(){
+ const isFS=!!(document.fullscreenElement||document.webkitFullscreenElement||document.msFullscreenElement);
+ $('fs').classList.toggle('on',isFS);
+ $('fs').textContent=isFS?'🗗':'⛶';
+ if($('fsMenu'))$('fsMenu').textContent=isFS?'🗗 Küçült':'⛶ Tam Ekran';
+ setTimeout(resize,100);
+}
+document.addEventListener('fullscreenchange',syncFSBtn);
+document.addEventListener('webkitfullscreenchange',syncFSBtn);
+$('fs').onclick=toggleFS;
+$('fsMenu').onclick=toggleFS;
 
 /* Çevrimdışı kalınırsa devreye girecek yedek veri */
 const FALLBACK_DATA={"Canada": "-141,69 -128,70 -115,68 -95,72 -82,69 -80,63 -94,58 -82,55 -79,52 -78,62 -70,60 -62,57 -56,52 -60,47 -66,45 -67,47 -71,45 -75,45 -83,46 -89,48 -95,49 -123,49 -125,50 -131,54 -137,59 -141,60", "United States": "-123,49 -95,49 -89,48 -83,46 -75,45 -71,45 -67,47 -67,44 -70,42 -74,40 -76,37 -81,31 -80,26 -83,29 -89,30 -94,29 -97,26 -100,28 -104,29 -106,32 -111,31 -117,32 -121,35 -124,40 -124,46|-141,69 -156,71 -166,68 -165,62 -158,58 -152,59 -141,60", "Mexico": "-117,32 -111,31 -106,32 -104,29 -100,28 -97,26 -97,22 -94,18 -91,19 -90,21 -87,21 -88,18 -92,15 -96,16 -105,20 -106,23 -112,29", "Greenland": "-45,60 -52,65 -55,70 -60,76 -70,80 -30,83 -20,80 -20,72 -30,68 -40,64", "Cuba": "-85,22 -80,23 -74,20 -78,20", "Dominican Rep.": "-72,19.5 -69,19.5 -68,18 -71,18", "Guatemala": "-92,17 -89,18 -88,16 -89,14 -92,14.5", "Honduras": "-89,14 -88,16 -83,16 -83,14 -87,13", "Nicaragua": "-87,13 -83,14 -83,11 -86,11", "Costa Rica": "-86,11 -83,11 -82,9 -85,9", "Panama": "-85,9 -82,9 -77,8 -78,7 -82,8", "Colombia": "-77,8 -72,12 -67,6 -67,2 -70,-4 -75,-1 -79,1 -78,7", "Venezuela": "-72,12 -64,11 -60,8 -60,5 -64,2 -67,2 -67,6", "Guyana": "-60,8 -57,6 -56,2 -59,2 -60,5", "Suriname": "-57,6 -54,5 -54,2 -56,2", "Ecuador": "-80,1 -79,1 -75,-1 -75,-4 -80,-4 -81,-1", "Peru": "-81,-4 -75,-4 -70,-4 -69,-11 -69,-17 -71,-18 -76,-14 -81,-6", "Brazil": "-70,-4 -67,2 -64,2 -60,5 -54,5 -50,2 -48,-1 -35,-5 -35,-9 -39,-18 -41,-22 -48,-26 -53,-33 -57,-30 -54,-27 -56,-23 -58,-20 -58,-16 -65,-10 -69,-11", "Bolivia": "-69,-11 -65,-10 -58,-16 -58,-20 -62,-22 -67,-22 -69,-17", "Paraguay": "-58,-20 -55,-24 -54,-26 -58,-27 -62,-24 -62,-22", "Chile": "-70,-18 -68,-22 -69,-30 -70,-40 -72,-50 -74,-52 -69,-55 -69,-52 -72,-46 -73,-37 -71,-30 -70,-22", "Argentina": "-68,-22 -62,-22 -62,-24 -58,-27 -54,-27 -58,-34 -57,-38 -63,-41 -65,-45 -68,-50 -69,-55 -69,-52 -72,-50 -70,-40 -69,-30", "Uruguay": "-58,-30 -54,-33 -56,-35 -58,-34", "Iceland": "-24,64 -14,64 -14,66 -22,66", "United Kingdom": "-5,50 1,51 2,53 -2,57 -5,59 -6,56 -3,54 -5,52", "Ireland": "-10,52 -6,52 -6,55 -10,54", "Norway": "5,59 8,58 11,59 12,62 18,68 28,71 20,69 14,66 8,63 5,62", "Sweden": "11,59 13,56 16,56 19,60 21,64 24,66 20,69 18,68 12,62", "Finland": "22,60 30,60 31,63 29,70 24,68 24,65", "France": "-4,48 -1,46 -2,43 3,42 7,43 8,47 4,50 2,51 -1,49", "Spain": "-9,43 -2,43 3,42 0,38 -2,36 -6,36 -9,37", "Portugal": "-9,37 -9,42 -7,42 -7,38", "Germany": "6,51 7,54 14,54 15,51 13,48 8,47 6,49", "Italy": "7,44 13,47 13,45 17,41 16,38 12,41 9,44", "Poland": "14,54 19,55 24,54 24,50 19,49 15,51", "Ukraine": "24,50 24,52 32,52 40,50 38,47 33,45 30,46 26,48", "Belarus": "24,52 24,55 30,56 32,53 30,51", "Romania": "21,46 26,48 30,46 29,44 23,44", "Bulgaria": "23,44 29,44 28,42 23,42", "Hungary": "16,47 22,48 21,46 17,46", "Greece": "20,40 23,41 26,41 24,37 22,37", "Turkey": "26,42 33,42 41,41 44,40 44,37 36,36 29,36 26,38", "Russia": "30,60 28,70 40,67 60,69 70,73 100,77 140,72 180,69 180,65 160,60 143,59 140,53 135,43 131,43 130,48 120,53 110,50 90,50 80,51 60,52 48,46 48,42 40,43 38,47 40,50 32,52 31,56 28,57", "Kazakhstan": "48,46 60,52 80,51 87,49 80,43 70,41 56,41 53,45", "Turkmenistan": "53,40 56,41 60,38 62,36 54,37", "Uzbekistan": "56,41 70,41 66,38 60,38", "Iran": "44,40 48,38 54,37 61,36 61,26 56,26 50,30 46,33 44,37", "Iraq": "39,37 44,37 46,33 48,30 43,30 39,32", "Syria": "36,36 42,37 39,32 36,33", "Jordan": "36,33 39,32 37,29 35,30", "Saudi Arabia": "36,29 39,32 43,30 48,30 50,26 56,24 52,17 43,17 39,21", "Yemen": "43,17 52,17 46,13 43,13", "Oman": "56,24 60,22 57,18 52,17", "Afghanistan": "61,36 66,38 71,37 75,36 70,31 66,30 62,30", "Pakistan": "61,26 62,30 66,30 70,31 75,36 76,32 71,27 68,24", "India": "68,24 71,27 76,32 79,35 88,28 92,27 89,22 80,15 77,8 73,16 72,21", "Nepal": "80,29 88,26.5 88,28 81,30", "Bangladesh": "88,22 92,22 92,26 89,26", "Sri Lanka": "80,6 82,7 81,9 80,9", "China": "74,39 80,43 87,49 95,45 110,43 117,47 120,53 135,48 131,43 124,40 121,37 122,31 118,24 110,21 106,22 99,22 97,28 88,28 79,35", "Mongolia": "88,49 99,52 115,50 117,47 110,43 95,45", "Japan": "130,32 135,35 140,41 142,45 145,43 141,38 140,35 133,34", "South Korea": "126,35 129,35 129,38 127,38", "North Korea": "125,38 127,38 129,38 130,42 125,40", "Myanmar": "92,27 98,28 100,22 98,16 97,10 94,17", "Thailand": "98,16 100,22 105,18 102,13 100,7 98,10", "Vietnam": "102,22 106,23 108,16 109,12 105,9 105,18", "Malaysia": "100,6 104,2 103,1 101,3", "Indonesia": "95,5 98,4 105,-5 102,-4|106,-6 114,-7 114,-9 106,-8|109,1 117,7 119,1 116,-4 110,-3|119,0 125,1 122,-5|131,-1 141,-3 141,-9 137,-8", "Philippines": "120,18 122,18 126,7 122,7 120,14", "Papua New Guinea": "141,-3 147,-6 150,-10 141,-9", "Australia": "114,-22 122,-17 130,-12 136,-12 142,-11 146,-19 153,-26 150,-37 141,-38 134,-33 129,-32 115,-34", "New Zealand": "172,-35 178,-38 175,-41 172,-44 168,-46 167,-45 172,-41", "Morocco": "-13,28 -9,32 -6,35 -2,35 -2,32 -8,28", "Algeria": "-8,28 -2,32 -2,35 8,37 10,33 9,30 12,24 4,19 -5,25", "Tunisia": "8,37 11,37 11,33 10,33", "Libya": "10,33 11,33 20,32 25,32 25,20 15,23 12,24 9,30", "Egypt": "25,32 31,31 34,29 33,25 36,22 25,22", "Sudan": "25,22 36,22 37,18 36,14 34,9 27,10 24,12 22,15 24,20", "South Sudan": "24,12 27,10 34,9 35,5 30,4 25,5", "Ethiopia": "34,9 36,14 43,12 48,8 42,4 36,4 35,5", "Somalia": "43,12 51,12 51,10 48,5 41,-1 42,4 48,8", "Kenya": "36,4 42,4 41,-1 39,-4 34,-1 34,4", "Uganda": "30,4 34,4 34,-1 30,-1", "Tanzania": "30,-1 34,-1 39,-4 40,-10 35,-11 30,-8", "DR Congo": "16,-6 18,3 25,5 30,4 30,-1 30,-8 28,-12 22,-13 22,-8", "Congo": "11,-4 12,2 16,3 18,2 16,-5 14,-5", "Cameroon": "9,4 14,12 15,8 16,3 12,2", "Gabon": "9,1 12,2 12,-4 9,-1", "Nigeria": "3,6 3,12 8,13 14,13 14,8 9,4", "Niger": "3,12 4,19 12,23 15,20 14,13 8,13", "Chad": "14,13 15,20 15,23 24,20 24,12 22,10 16,8", "Mali": "-12,15 -5,25 4,19 3,12 -5,10 -11,12", "Mauritania": "-17,21 -13,28 -8,28 -5,25 -12,15 -17,16", "Senegal": "-17,15 -12,15 -12,12 -16,12", "Ivory Coast": "-8,5 -3,5 -3,10 -8,10", "Ghana": "-3,5 1,6 1,11 -3,11", "Burkina Faso": "-5,10 -3,11 3,12 1,14 -5,14", "Angola": "12,-6 13,-17 21,-18 22,-13 22,-8 16,-6", "Zambia": "22,-13 28,-12 33,-9 33,-14 25,-18 22,-18", "Mozambique": "33,-10 40,-10 41,-15 35,-24 32,-26 32,-18 33,-14", "Zimbabwe": "25,-18 33,-17 32,-22 27,-22", "Namibia": "12,-17 21,-18 20,-25 20,-29 17,-29 14,-22", "Botswana": "21,-18 25,-18 27,-23 22,-26 20,-24", "South Africa": "17,-29 20,-29 22,-26 27,-23 32,-26 32,-29 27,-34 20,-35 18,-33", "Madagascar": "44,-17 49,-12 50,-16 47,-25 44,-24", "Netherlands": "3.5,51.5 6,51 7,53.5 4.5,53", "Belgium": "2.5,51 6,50 6,51 4,51.5", "Denmark": "8,55 10,57.5 12,56 10,54.8", "Austria": "10,47 13,47.6 17,48 16,46.5 12,46.5", "Czechia": "12,50 15,51 19,49.5 17,48.5 13,49", "Slovakia": "17,48.5 22,49 21,48 18,47.8", "Switzerland": "6,46 8,47.6 10,47 9,46", "Serbia": "19,46 22,45 22.5,43 20,42.5 19,44", "Croatia": "13.5,45.5 16,46.5 19,45.5 17,43.5 15,44", "Bosnia": "16,45 19,45 19,43.5 17,43.5", "Albania": "19.5,42 20.5,41 20,40 19.3,40.5", "Lithuania": "21,56 26,56 26,54 23,54", "Latvia": "21,57 28,57.5 27,56 21,56.5", "Estonia": "23,58.5 28,59.5 28,57.5 24,57.5", "Moldova": "27,48 30,48.5 30,46.5 28,46.5", "Georgia": "41,43 46,42 45,41 41,41.5", "Armenia": "43.5,41 46,41 46,39 44,39", "Azerbaijan": "46,42 49,41 49,38.5 46,39", "Israel": "34.3,31.5 35.5,33 35.7,31 34.5,29.5", "Kuwait": "46.5,30 48.4,30 48,28.5 47,28.5", "UAE": "51.5,24.2 56,26 56.5,24 52,22.8", "Tajikistan": "67,39 74,39 74,37 70,37", "Kyrgyzstan": "70,42 80,43 77,40 72,39.5", "Laos": "100,22 105,21 107,18 104,14 102,17", "Cambodia": "102,14 105,14.5 107,12 104,10.5 102.5,12", "Taiwan": "120,25 122,25 121,22 120,23", "Guinea": "-14,12.5 -11,12.5 -8,10 -9,8 -13,9.5", "Sierra Leone": "-13,9 -10.5,9.5 -10.5,7 -12.5,7", "Liberia": "-11.5,7 -8.5,7.5 -8,4.5 -11,6", "Benin": "1.7,6.3 3.5,6.3 3,12 1,10", "Togo": "0,6 1.7,6 1.2,11 0,10", "Central African Rep.": "15,8 16,3 25,5 24,10 19,10", "Eritrea": "36,14 38,18 43,13 40,14", "Malawi": "33,-9.5 35,-10 35,-15 33.5,-14", "Haiti": "-74.5,19.8 -72.5,19.8 -72,18.5 -74.5,18.2", "Jamaica": "-78.4,18.4 -76.2,18.2 -77,17.8"};
@@ -247,7 +297,13 @@ const flowM=o=>(isBot(o)?.9:1)*(1+.25*LV[o].fl+B(o)*.3), incM=o=>1+.35*LV[o].inc
 const prod=c=>c.owner<0?(c.troops<c.nCap?0.12*c.pwr:0):(0.95*c.pwr*mult(c.owner)*(c.capital?1.35:1));
 const ref=c=>40+110*c.pwr;
 const cost=l=>Math.round(70*Math.pow(1.5,l));
-const UP=[{k:'g',n:'Asker Hızı',d:'+30% üretim (tüm ülkeler)'},{k:'spd',n:'Ordu Hızı',d:'+25% yürüyüş'},{k:'inc',n:'Altın Hızı',d:'+35% altın geliri'},{k:'fl',n:'Akış Hızı',d:'+25% hat akışı'},{k:'ln',n:'Hat Sayısı',d:'+1 hat / ülke'}];
+const UP=[
+ {k:'g',ic:'⚔️',n:'Asker Hızı',d:'+30% üretim (tüm ülkeler)'},
+ {k:'spd',ic:'👟',n:'Ordu Hızı',d:'+25% yürüyüş'},
+ {k:'inc',ic:'🪙',n:'Altın Hızı',d:'+35% altın geliri'},
+ {k:'fl',ic:'🌊',n:'Akış Hızı',d:'+25% hat akışı'},
+ {k:'ln',ic:'🔗',n:'Hat Sayısı',d:'+1 hat / ülke'}
+];
 const mk=(s,t,o,n,lk)=>({s,t,o,n,lk,p:0,dur:Math.max(.5,Math.hypot(t.x-s.x,t.y-s.y)/(110*spdM(o)))});
 
 function getAttacker(c){
@@ -342,7 +398,7 @@ function showEnd(w){$('end').hidden=false;$('goOn').hidden=!(w===-3||w===me);
  else if(w===-2){$('et').textContent='Yenildin';$('ep').textContent='Hiçbir oyuncu ayakta kalmadı.'}
  else{$('et').textContent=(slots[w]?slots[w].name||PAL[w].n:'?')+' Dünyanın Fatihi!';$('ep').textContent='Dünyada tek güç olarak mutlak hâkimiyeti kurdu.'}}
 
-/* ---------- ağ / lobi (Sabit Oda Kodu & Güçlendirilmiş WebRTC Bağlantısı) ---------- */
+/* ---------- ağ / lobi ---------- */
 const PEER_CFG={
  debug:1,
  config:{
@@ -355,7 +411,6 @@ const PEER_CFG={
  }
 };
 
-/* Kullanıcının yazdığı kodu Türkçe karakter / boşluk sorunlarından arındırır, asla rastgele değiştirmez */
 function cleanCode(str){
  if(!str)return '';
  const trMap={'ç':'C','Ç':'C','ğ':'G','Ğ':'G','ı':'I','I':'I','i':'I','İ':'I','ö':'O','Ö':'O','ş':'S','Ş':'S','ü':'U','Ü':'U'};
@@ -407,7 +462,6 @@ function pickCountry(i){if(role==='guest'){conn&&conn.open&&conn.send({t:'pick',
  slots[me].pick=i;focus(C[i]);role==='host'?bcLobby():renderLobby()}
 const rnd=()=>{const a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<5;i++)s+=a[Math.random()*a.length|0];return s};
 
-/* Oda kurma: Kullanıcının belirlediği kodu kesin olarak korur, asla rastgele başka koda atlamaz */
 function hostRoom(customCode){
  if(!window.Peer){$('net').textContent='Online mod için internet bağlantısı (PeerJS) gerekli.';return}
  const desired=cleanCode(customCode!==undefined?customCode:$('jcode').value);
@@ -476,7 +530,6 @@ function hostMsg(k,d){if(d.t==='pick'&&mode==='lobby'){if(!slots.some((s,i)=>i!=
  else if(d.t==='ready'&&mode==='lobby'){if(slots[k].pick>=0)slots[k].ready=!!d.v;bcLobby()}
  else if(d.t==='cmd'&&mode==='play'){const r=exec(k,d.m);if(r&&slots[k].conn)slots[k].conn.send({t:'toast',m:r})}}
 
-/* Odaya katılma: Girilen kodu olduğu gibi kullanır ve bağlantı kurulana kadar el sıkışma isteği gönderir */
 function joinRoom(cd){
  if(!window.Peer){$('net').textContent='Online mod için internet bağlantısı (PeerJS) gerekli.';return}
  cd=cleanCode(cd);
@@ -540,7 +593,7 @@ function guestMsg(m){
 function end2(w){if(mode==='over')return;mode='over';showEnd(w)}
 function snap(){return{t:'s',o:C.map(c=>c.owner),n:C.map(c=>Math.round(c.troops*10)/10),a:armies.map(a=>[a.s.id,a.t.id,a.o,a.n,Math.round(a.p*1000)/1000,Math.round(a.dur*100)/100,a.lk]),l:links.map(L=>[L.s.id,L.t.id,L.o]),g:G.map(x=>Math.floor(x)),lv:LV,k:C.map(c=>c.capital?1:0).join(''),x:C.map(c=>Math.round(c.lost||0)),at:C.map(c=>c.combatT>0?c.att:-1),T:Math.round(gameT*10)/10}}
 function apply(m){C.forEach((c,i)=>{if(m.o[i]!==undefined)c.owner=m.o[i];if(m.n[i]!==undefined)c.troops=m.n[i]});armies=m.a.map(x=>({s:C[x[0]],t:C[x[1]],o:x[2],n:x[3],p:x[4],dur:x[5],lk:x[6]})).filter(a=>a.s&&a.t);links=m.l.map(x=>({s:C[x[0]],t:C[x[1]],o:x[2],acc:0})).filter(l=>l.s&&l.t);G=m.g;LV=m.lv;gameT=m.T;if(m.x)C.forEach((c,i)=>{c.lost=m.x[i]||0});if(m.at)C.forEach((c,i)=>{c.att=m.at[i];c.combatT=m.at[i]>=0?0.5:0});if(m.k)C.forEach((c,i)=>{c.capital=m.k[i]==='1'})}
-function beginPlay(){mode='play';document.body.classList.add('play');$('lobby').hidden=true;$('menu').hidden=true;speed=1;$('spd').hidden=role!=='solo';toast('Sürükle-bırak = hat kur · ✕ = hattı kes · iki parmakla yakınlaştır')}
+function beginPlay(){mode='play';document.body.classList.add('play');$('lobby').hidden=true;$('menu').hidden=true;speed=1;$('spd').hidden=role!=='solo';toast('Sürükle-bırak = hat kur · ✕ = hattı kes · ⛶ = tam ekran')}
 function startGame(){if(mode!=='lobby'||slots[0].pick<0)return;
  const hum=slots.map((s,i)=>s.type==='human'?i:-1).filter(i=>i>=0);let nb=Math.min(botSel,NS-hum.length);
  for(let i=0;i<NS&&nb>0;i++)if(slots[i].type==='none'){slots[i]={type:'bot',name:'Bot '+PAL[i].n,pick:-1,ready:true};nb--}
@@ -743,7 +796,7 @@ $('diff').onchange=e=>{botDiff=+e.target.value};
 addEventListener('keydown',e=>{if(mode!=='play'||e.target.tagName==='INPUT')return;if(e.key==='a'||e.key==='A')$('selAll').click();if(e.key==='Escape')sel.clear();if(e.key==='h'||e.key==='H')$('aid').click();if(e.key==='f'||e.key==='F')$('foeNext').click();if(e.key===' '&&role==='solo'){e.preventDefault();speed=speed?0:1}});
 
 /* ---------- arayüz ---------- */
-const ub={};UP.forEach(u=>{const b=document.createElement('button');b.className='up';b.innerHTML='<b></b><small>'+u.d+'</small><small class="c"></small>';
+const ub={};UP.forEach(u=>{const b=document.createElement('button');b.className='up';b.title=u.n+' ('+u.d+')';b.innerHTML='<b></b><small class="d">'+u.d+'</small><small class="c"></small>';
  b.onclick=()=>{const l=LV[me][u.k];if(l>=12)return;if(G[me]<cost(l)){toast('Yetersiz altın');return}cmd({k:'up',u:u.k});beep(2)};
  $('ups').appendChild(b);ub[u.k]={el:b,t:b.children[0],c:b.children[2]}});
 function aidTarget(){if(sel.size===1){const c=[...sel][0];if(c.owner===me)return c}
@@ -753,7 +806,8 @@ function hud2(){const cnt=Array(NS).fill(0),tr=Array(NS).fill(0);for(const c of 
  $('rank').innerHTML=rows.map(o=>'<div><i style="background:'+PAL[o].c+'"></i>'+(o===me?'<b>Sen</b>':(slots[o].name||PAL[o].n))+'<span>'+cnt[o]+' ülke · '+Math.floor(tr[o])+'</span></div>').join('');
  const at=aidTarget();$('aidT').textContent=at?at.name:'sorunlu ülke yok';$('aid').classList.toggle('alert',!!at&&(at.lost||0)>3);
  const foes=getEnemyCountries();
- $('foeT').textContent=foes.length?foes.length+' ülke kaldı':'düşman kalmadı';
+ const isMob=W<=720;
+ $('foeT').textContent=isMob?String(foes.length):(foes.length?foes.length+' ülke kaldı':'düşman kalmadı');
  if(!$('foePanel').hidden){
   const sig=foes.map(c=>c.id+':'+c.owner+':'+Math.floor(c.troops/5)).join('|');
   if(sig!==foeSig){
@@ -773,9 +827,12 @@ function hud2(){const cnt=Array(NS).fill(0),tr=Array(NS).fill(0);for(const c of 
  }
 }
 function hud(){let n=0,t=0;for(const c of C)if(c.owner===me){n++;t+=c.troops}
- $('sC').textContent=n+' / '+C.length;$('sT').textContent=Math.floor(t);$('sG').textContent=Math.floor(G[me])+' (+'+(n*5*incM(me)).toFixed(1)+'/sn)';
- $('sL').textContent=links.filter(L=>L.o===me).length+' (maks '+maxL(me)+'/ülke)';
- UP.forEach(u=>{const l=LV[me][u.k],c=cost(l),b=ub[u.k];b.t.textContent=u.n+' · Sv.'+l;b.c.textContent=l>=12?'MAKS':'💰 '+c;b.el.classList.toggle('dis',l>=12||G[me]<c)});
+ const isMob=W<=720;
+ $('sC').textContent=isMob?n:(n+' / '+C.length);
+ $('sT').textContent=Math.floor(t);
+ $('sG').textContent=isMob?Math.floor(G[me]):(Math.floor(G[me])+' (+'+(n*5*incM(me)).toFixed(1)+'/sn)');
+ $('sL').textContent=isMob?links.filter(L=>L.o===me).length:(links.filter(L=>L.o===me).length+' (maks '+maxL(me)+'/ülke)');
+ UP.forEach(u=>{const l=LV[me][u.k],c=cost(l),b=ub[u.k];b.t.innerHTML=u.ic+' <em class="lbl">'+u.n+' · </em>Sv.'+l;b.c.textContent=l>=12?'MAKS':'💰'+c;b.el.classList.toggle('dis',l>=12||G[me]<c)});
  sel.forEach(c=>{if(c.owner!==me)sel.delete(c)});hud2();
  if(mode==='play'&&gameT>4&&!outShown&&!n&&!armies.some(a=>a.o===me)){outShown=true;showEnd(-3)}}
 $('goOn').onclick=()=>{$('end').hidden=true;if(mode==='over')mode='play'};
