@@ -1,2240 +1,812 @@
 <!doctype html>
-<html lang="tr">
-<head>
-<meta charset="utf-8">
-<title>World Conquest — Online & Strateji</title>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<!-- PeerJS for Cross-Device WebRTC Online Multiplayer Lobby -->
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<html lang="tr"><head><meta charset="utf-8"><title>World Conquest</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <style>
-:root {
-  color-scheme: dark;
-  --g: rgba(255, 255, 255, .08);
-  --b: rgba(255, 255, 255, .18);
-  --t: #eaf2ff;
-  --m: #9fb2d0;
-  --ac: #4fd1ff;
-  --ok: #4ade80;
-  --danger: #ff5d73;
+:root{color-scheme:dark;--g:rgba(255,255,255,.08);--b:rgba(255,255,255,.18);--t:#eaf2ff;--m:#9fb2d0;--ac:#4fd1ff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--t);
+background:radial-gradient(55% 50% at 15% 15%,rgba(56,189,248,.28),transparent),radial-gradient(50% 50% at 88% 85%,rgba(167,139,250,.28),transparent),radial-gradient(40% 40% at 70% 10%,rgba(244,114,182,.15),transparent),#070b17}
+#c0,#c1{pointer-events:none}
+canvas{position:fixed;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair}
+.glass{background:var(--g);backdrop-filter:blur(12px) saturate(150%);-webkit-backdrop-filter:blur(12px) saturate(150%);border:1px solid var(--b);border-radius:18px;box-shadow:0 10px 36px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.28)}
+#hud,#ctl,#panel,#hint{display:none}
+body.play #hud,body.play #ctl,body.play #panel{display:flex}body.play #hint{display:block}
+#hud{position:fixed;left:12px;top:calc(12px + env(safe-area-inset-top,0px));gap:16px;align-items:center;padding:10px 16px;font-size:13px;color:var(--m);flex-wrap:wrap;max-width:calc(100% - 150px)}
+#hud b{color:var(--t)}.brand{letter-spacing:.14em;font-size:12px}
+#ctl{position:fixed;right:12px;top:calc(12px + env(safe-area-inset-top,0px));gap:4px;padding:6px}
+button,select{font:inherit;color:var(--t);background:rgba(255,255,255,.07);border:1px solid var(--b);border-radius:12px;padding:8px 12px;cursor:pointer;transition:background .12s,transform .08s;touch-action:manipulation;user-select:none}
+button:hover:not(:disabled){background:rgba(255,255,255,.18)}button:active:not(:disabled){transform:scale(.95);background:rgba(79,209,255,.35)}
+button:disabled{opacity:.4;cursor:not-allowed}button.on{background:rgba(79,209,255,.3);border-color:var(--ac)}
+select option{background:#101830}
+#panel{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));gap:10px;padding:10px;align-items:stretch;max-width:calc(100% - 16px);overflow-x:auto}
+#ups{display:flex;gap:8px}.up{text-align:left;min-width:118px;line-height:1.35}.up small{display:block;color:var(--m);font-size:11px}.up.dis{opacity:.45}
+.sep{width:1px;background:var(--b);flex:none}.col{display:flex;flex-direction:column;gap:6px;flex:none}.col button{padding:6px 10px;font-size:12px}
+#hint{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(112px + env(safe-area-inset-bottom,0px));font-size:12px;color:var(--m);pointer-events:none;text-align:center;width:92%;text-shadow:0 1px 6px #000}
+#tip{position:fixed;pointer-events:none;padding:8px 12px;font-size:12px;display:none;z-index:5}
+#toast{position:fixed;left:50%;transform:translateX(-50%);top:calc(70px + env(safe-area-inset-top,0px));padding:10px 16px;font-size:13px;z-index:30;max-width:92%;text-align:center}
+.modal{position:fixed;inset:0;display:grid;place-items:center;z-index:10;padding:12px;pointer-events:none}
+.modal>*{pointer-events:auto}
+[hidden]{display:none!important}
+.card{width:min(440px,100%);padding:22px;display:flex;flex-direction:column;gap:11px;max-height:94%;overflow:auto}
+.card h1{margin:0;font-size:26px;letter-spacing:.04em;background:linear-gradient(90deg,#4fd1ff,#a78bfa,#f472b6);-webkit-background-clip:text;background-clip:text;color:transparent}
+.card p{margin:0;color:var(--m);font-size:13px;line-height:1.5}
+input{font:inherit;color:var(--t);background:rgba(255,255,255,.07);border:1px solid var(--b);border-radius:12px;padding:10px 12px;outline:none;width:100%}
+input:focus{border-color:var(--ac)}
+#list{overflow:auto;display:flex;flex-direction:column;gap:4px;min-height:100px;max-height:200px;padding-right:4px}
+#list button{text-align:left;padding:6px 10px;display:flex;justify-content:space-between;align-items:center}#list button.dis{opacity:.35}
+#list button small{color:var(--m);font-size:11px}
+.primary{background:linear-gradient(90deg,rgba(79,209,255,.5),rgba(167,139,250,.5));padding:12px;font-weight:600}
+.row{display:flex;gap:8px;align-items:center}.row>*{flex:1}.row button{flex:none}
+.pl{display:flex;gap:8px;align-items:center;font-size:13px;padding:6px 8px;border-radius:10px;background:rgba(255,255,255,.05)}
+.pl i{width:12px;height:12px;border-radius:50%;flex:none}.pl span{color:var(--m);flex:1;text-align:right;font-size:12px}.pl em{font-style:normal}
+.code{font-size:22px;letter-spacing:.18em;font-weight:700;text-transform:uppercase;text-align:center}
+#aid,#foeBtn{display:none;position:fixed;right:12px;flex-direction:column;align-items:center;gap:2px;padding:10px 12px;z-index:3;border-radius:16px;min-width:124px}
+#aid{top:calc(50% - 34px);transform:translateY(-50%)}
+#foeBtn{top:calc(50% + 34px);transform:translateY(-50%)}
+body.play #aid,body.play #foeBtn{display:flex}
+#aid small,#foeBtn small{font-size:10px;color:var(--m);max-width:106px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#aid.alert{border-color:#ff5d73;animation:pl 1s infinite}@keyframes pl{50%{box-shadow:0 0 18px rgba(255,93,115,.75)}}
+#foePanel{position:fixed;right:146px;top:50%;transform:translateY(-50%);width:230px;max-height:300px;display:flex;flex-direction:column;gap:6px;padding:10px;z-index:4;font-size:12px}
+.foeHead{display:flex;justify-content:space-between;align-items:center;gap:6px;padding-bottom:4px;border-bottom:1px solid var(--b)}
+.foeHead button{padding:4px 8px;font-size:11px;border-radius:8px}
+#foeList{overflow-y:auto;display:flex;flex-direction:column;gap:4px;max-height:230px;padding-right:2px}
+.foeItem{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:10px;font-size:12px;text-align:left;width:100%}
+.foeItem i{width:9px;height:9px;border-radius:50%;flex:none}
+.foeItem b{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.foeItem span{color:var(--m);font-size:11px;flex:none}
+#err{color:#ff8a9a;font-size:12px}
+#rank{display:none;position:fixed;right:12px;top:calc(64px + env(safe-area-inset-top,0px));padding:8px 10px;font-size:12px;z-index:2}body.play #rank{display:block}
+#rank div{display:flex;gap:6px;align-items:center;white-space:nowrap;padding:1px 0}#rank i{width:9px;height:9px;border-radius:50%;flex:none}#rank span{margin-left:auto;padding-left:12px;color:var(--m)}
+@media (max-width:720px){
+ #rank{display:none!important}
+ #hud{gap:8px 12px;padding:8px 12px;font-size:11px;max-width:calc(100% - 118px)}.brand{display:none}
+ #ctl{padding:4px}#ctl button{padding:6px 9px}
+ #hint{display:none!important}
+ #panel{gap:6px;padding:6px;border-radius:14px}.up{min-width:104px;padding:6px 8px;font-size:11px}.col button{font-size:11px;padding:5px 8px}
+ #aid,#foeBtn{padding:7px 9px;min-width:104px;font-size:12px}
+ #foePanel{right:12px;top:auto;bottom:calc(110px + env(safe-area-inset-bottom,0px));transform:none;width:210px;max-height:220px}
+ .card{padding:16px}.card h1{font-size:22px}#list{max-height:140px}
 }
-* {
-  box-sizing: border-box;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-tap-highlight-color: transparent;
-}
-html, body {
-  margin: 0;
-  height: 100%;
-  overflow: hidden;
-  font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
-  color: var(--t);
-  background:
-    radial-gradient(55% 50% at 15% 15%, rgba(56, 189, 248, .28), transparent),
-    radial-gradient(50% 50% at 88% 85%, rgba(167, 139, 250, .28), transparent),
-    radial-gradient(40% 40% at 70% 10%, rgba(244, 114, 182, .15), transparent),
-    #070b17;
-}
-canvas {
-  position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  touch-action: none;
-  cursor: crosshair;
-  z-index: 1;
-}
-.glass {
-  background: var(--g);
-  backdrop-filter: blur(18px) saturate(170%);
-  -webkit-backdrop-filter: blur(18px) saturate(170%);
-  border: 1px solid var(--b);
-  border-radius: 18px;
-  box-shadow: 0 10px 36px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .28);
-}
-#hud {
-  position: fixed;
-  left: 12px;
-  top: calc(12px + env(safe-area-inset-top, 0px));
-  display: flex;
-  gap: 14px;
-  align-items: center;
-  padding: 10px 16px;
-  font-size: 13px;
-  color: var(--m);
-  flex-wrap: wrap;
-  z-index: 4;
-  max-width: calc(100vw - 230px);
-}
-#hud b { color: var(--t); font-variant-numeric: tabular-nums; }
-.brand { letter-spacing: .12em; font-size: 12px; }
-#ctl {
-  position: fixed;
-  right: 12px;
-  top: calc(12px + env(safe-area-inset-top, 0px));
-  display: flex;
-  gap: 4px;
-  padding: 6px;
-  z-index: 4;
-}
-button {
-  font: inherit;
-  color: var(--t);
-  background: rgba(255, 255, 255, .08);
-  border: 1px solid var(--b);
-  border-radius: 12px;
-  padding: 8px 12px;
-  cursor: pointer;
-  transition: transform .1s, background .15s, border-color .15s;
-  touch-action: manipulation;
-  position: relative;
-}
-/* Prevent child nodes from stealing pointer events and breaking clicks */
-button * {
-  pointer-events: none;
-}
-button:hover:not(:disabled) {
-  background: rgba(255, 255, 255, .18);
-  transform: translateY(-1px);
-}
-button:active:not(:disabled) {
-  transform: translateY(1px) scale(0.97);
-  background: rgba(79, 209, 255, .28);
-}
-button:disabled {
-  opacity: .4;
-  cursor: not-allowed;
-}
-button.on {
-  background: rgba(79, 209, 255, .32);
-  border-color: var(--ac);
-  box-shadow: 0 0 14px rgba(79, 209, 255, .3);
-}
-#panel {
-  position: fixed;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-  display: flex;
-  gap: 10px;
-  padding: 10px;
-  align-items: stretch;
-  max-width: calc(100vw - 16px);
-  overflow-x: auto;
-  z-index: 4;
-  scrollbar-width: thin;
-}
-#ups {
-  display: flex;
-  gap: 8px;
-}
-.up {
-  text-align: left;
-  min-width: 122px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 2px;
-}
-.up small {
-  display: block;
-  color: var(--m);
-  font-size: 11px;
-}
-.up .cost-tag {
-  color: #ffd166;
-  font-weight: 600;
-}
-#toast {
-  position: fixed;
-  left: 50%;
-  transform: translateX(-50%);
-  top: calc(68px + env(safe-area-inset-top, 0px));
-  padding: 10px 16px;
-  font-size: 13px;
-  z-index: 8;
-  pointer-events: none;
-  text-align: center;
-  max-width: 92vw;
-}
-.sep {
-  width: 1px;
-  background: var(--b);
-  flex-shrink: 0;
-}
-.col {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex-shrink: 0;
-}
-.act-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  flex-shrink: 0;
-}
-.act-grid button {
-  padding: 7px 10px;
-  font-size: 12px;
-  white-space: nowrap;
-}
-#hint {
-  position: fixed;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: calc(108px + env(safe-area-inset-bottom, 0px));
-  font-size: 12px;
-  color: var(--m);
-  pointer-events: none;
-  text-align: center;
-  width: 92%;
-  z-index: 3;
-  text-shadow: 0 2px 6px rgba(0,0,0,.85);
-}
-#tip {
-  position: fixed;
-  pointer-events: none;
-  padding: 9px 13px;
-  font-size: 12px;
-  display: none;
-  z-index: 6;
-  line-height: 1.45;
-}
-.modal {
-  position: fixed;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  background: rgba(5, 8, 18, .48);
-  z-index: 10;
-  padding: 12px;
-  pointer-events: auto;
-}
-[hidden] {
-  display: none !important;
-}
-.card {
-  width: min(500px, 100%);
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 11px;
-  max-height: 92vh;
-  overflow-y: auto;
-}
-.card h1 {
-  margin: 0;
-  font-size: 24px;
-  letter-spacing: .04em;
-  background: linear-gradient(90deg, #4fd1ff, #a78bfa, #f472b6);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-.card p {
-  margin: 0;
-  color: var(--m);
-  font-size: 12.5px;
-  line-height: 1.45;
-}
-input {
-  font: inherit;
-  color: var(--t);
-  background: rgba(255, 255, 255, .07);
-  border: 1px solid var(--b);
-  border-radius: 12px;
-  padding: 9px 12px;
-  outline: none;
-  width: 100%;
-  user-select: text;
-  -webkit-user-select: text;
-}
-input:focus {
-  border-color: var(--ac);
-}
-#list {
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-height: 110px;
-  max-height: 185px;
-  padding-right: 4px;
-}
-#list button {
-  text-align: left;
-  padding: 7px 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-#go, .primary-btn {
-  background: linear-gradient(90deg, rgba(79, 209, 255, .5), rgba(167, 139, 250, .5));
-  padding: 11px;
-  font-weight: 600;
-}
-.tabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  background: rgba(0, 0, 0, .25);
-  padding: 4px;
-  border-radius: 14px;
-}
-.tabs button {
-  border: none;
-  padding: 8px;
-  font-size: 13px;
-  font-weight: 600;
-}
-.lobby-box {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  background: rgba(0, 0, 0, .24);
-  border: 1px solid rgba(255, 255, 255, .12);
-  border-radius: 14px;
-  padding: 10px;
-}
-.row {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-.player-slot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 10px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, .05);
-  font-size: 12.5px;
-}
-.badge {
-  padding: 3px 8px;
-  border-radius: 99px;
-  font-size: 11px;
-  font-weight: 600;
-}
-.badge.ok { background: rgba(74, 222, 128, .2); color: #4ade80; border: 1px solid rgba(74, 222, 128, .4); }
-.badge.wait { background: rgba(255, 184, 77, .18); color: #ffb84d; border: 1px solid rgba(255, 184, 77, .35); }
-
-/* Mobile & Tablet Responsive Layout (Requirement #7) */
-@media (max-width: 768px) {
-  #hud {
-    left: 8px;
-    right: 8px;
-    top: calc(8px + env(safe-area-inset-top, 0px));
-    max-width: none;
-    justify-content: space-between;
-    padding: 8px 12px;
-    gap: 8px;
-    font-size: 11.5px;
-  }
-  #hud .brand {
-    width: 100%;
-    margin-bottom: 2px;
-  }
-  #ctl {
-    top: calc(66px + env(safe-area-inset-top, 0px));
-    right: 8px;
-    padding: 4px;
-  }
-  #ctl button {
-    padding: 6px 9px;
-    font-size: 12px;
-  }
-  #hint {
-    display: none;
-  }
-  #panel {
-    left: 6px;
-    right: 6px;
-    transform: none;
-    max-width: none;
-    bottom: calc(6px + env(safe-area-inset-bottom, 0px));
-    padding: 8px;
-    gap: 8px;
-  }
-  .up {
-    min-width: 106px;
-    padding: 7px 9px;
-    font-size: 12px;
-  }
-  .act-grid button {
-    padding: 6px 8px;
-    font-size: 11px;
-  }
-  .card {
-    padding: 15px;
-    gap: 9px;
-  }
-  #list {
-    max-height: 140px;
-  }
-}
-</style>
-</head>
-<body>
-<canvas id="c"></canvas>
-
-<!-- Top HUD -->
-<div id="hud" class="glass">
-  <b class="brand">🌍 WORLD CONQUEST</b>
-  <span>Ülke <b id="sC">0</b></span>
-  <span>Asker <b id="sT">0</b></span>
-  <span>Altın <b id="sG">0</b></span>
-  <span>Hat <b id="sL">0</b></span>
-  <span id="netBadge" hidden style="color:#4ade80;font-weight:600">● Online</span>
-</div>
-
-<!-- Speed & Zoom Controls -->
-<div id="ctl" class="glass">
-  <button data-s="0">⏸</button>
-  <button data-s="1" class="on">1×</button>
-  <button data-s="2">2×</button>
-  <button data-s="4">4×</button>
-  <button id="zi">＋</button>
-  <button id="zo">－</button>
-</div>
-
-<!-- Tactical Hint -->
-<div id="hint">
-  Ülkenden hedefe <b>sürükle-bırak</b> = kesilene kadar <b>sürekli asker akışı</b> (asker sayın azalmaz, üretim paylaşılır) ·
-  Shift+sürükle: tek seferlik %50 dalga · Sağ tık / ✕: hattı kes · Renk: <span style="color:#5aa9ff">mavi zayıf</span> · <span style="color:#4ade80">yeşil denk</span> · <span style="color:#ff5d73">kırmızı üstün</span>
-</div>
-
-<!-- Bottom Upgrade & Action Panel -->
-<div id="panel" class="glass">
-  <div id="ups"></div>
-  <div class="sep"></div>
-  <div class="act-grid">
-    <button id="selAll">Hepsini seç</button>
-    <button id="clr">Temizle</button>
-    <button id="boxb">▭ Kutu seç</button>
-    <button id="cutModeBtn">✂ Hat Kes</button>
-    <button id="cutall" style="grid-column: span 2">✕ Tüm Hatları Kes</button>
-  </div>
-</div>
-
+</style></head><body>
+<canvas id="c0"></canvas><canvas id="c1"></canvas><canvas id="c"></canvas>
+<div id="hud" class="glass"><b class="brand">🌍 WORLD CONQUEST</b><span>Ülke <b id="sC">0</b></span><span>Asker <b id="sT">0</b></span><span>Altın <b id="sG">0</b></span><span>Hat <b id="sL">0</b></span></div>
+<div id="ctl" class="glass"><span id="spd"><button data-s="0">⏸</button><button data-s="1" class="on">1×</button><button data-s="2">2×</button><button data-s="4">4×</button></span><button id="mute">🔊</button><button id="zi">＋</button><button id="zo">－</button></div>
+<div id="hint">Ülkenden hedefe <b>sürükle-bırak</b> = kesilene kadar <b>sürekli asker akışı</b> (kendi ülkene de olur) · Shift+sürükle: tek seferlik %50 dalga · Sağ tık / ✕: hattı kes · Renk: <span style="color:#5aa9ff">mavi zayıf</span> · <span style="color:#4ade80">yeşil denk</span> · <span style="color:#ff5d73">kırmızı üstün</span></div>
+<div id="panel" class="glass"><div id="ups"></div><div class="sep"></div><div class="col"><button id="selAll">Hepsini seç</button><button id="clr">Temizle</button><button id="boxb">▭ Kutu seç</button><button id="cutall">✕ Hatları kes</button></div></div>
 <div id="tip" class="glass"></div>
+<div id="rank" class="glass"></div>
+<button id="aid" class="glass"><span>🛟 Yardım Gönder</span><small id="aidT"></small></button>
+<button id="foeBtn" class="glass"><span>🎯 Kalan Düşman</span><small id="foeT">0 ülke</small></button>
+<div id="foePanel" class="glass" hidden>
+ <div class="foeHead"><b>Düşman Ülkeleri</b><button id="foeNext">Bul ➔</button></div>
+ <div id="foeList"></div>
+</div>
 <div id="toast" class="glass" hidden></div>
 
-<!-- Start & Online Multiplayer Lobby Modal -->
-<div id="start" class="modal">
-  <div class="glass card">
-    <div class="row" style="justify-content:space-between">
-      <h1>WORLD CONQUEST</h1>
-      <button id="peekMapBtn" style="font-size:11.5px;padding:6px 10px">🗺️ Haritadan Seç</button>
-    </div>
+<div id="menu" class="modal"><div class="glass card"><h1>WORLD CONQUEST</h1>
+<p>Dünya haritasında bir ülke seç, üretimini büyüt, asker akış hatları kur ve dünyayı fethet.</p>
+<button id="bSolo" class="primary">Tek kişilik (botlara karşı)</button>
+<div class="row"><input id="jcode" placeholder="Oda kodu yazın (örn: 1453)" maxlength="12" autocapitalize="characters"></div>
+<div class="row"><button id="bHost" class="primary">Bu Kodla Oda Kur</button><button id="bJoin">Bu Koda Katıl</button></div>
+<p id="net"></p><div id="err" hidden></div></div></div>
 
-    <div class="tabs">
-      <button id="tabSingle" class="on">⚡ Tek Oyunculu</button>
-      <button id="tabOnline">🌐 Online Lobi</button>
-    </div>
+<div id="lobby" class="modal" hidden><div class="glass card"><h1>Lobi</h1>
+<div id="coderow"><p>Oda kodu (arkadaşın da aynı kodu girip <b>Bu Koda Katıl</b> demeli)</p>
+<div class="row"><input id="lcode" class="code" maxlength="12" autocapitalize="characters"><button id="setCode">Kodu Değiştir</button><button id="cpCode">Kopyala</button><button id="cpLink">Link</button></div></div>
+<div id="plist"></div>
+<input id="q" placeholder="Başlangıç ülkesi ara…"><div id="list"></div>
+<div id="botrow" class="row"><span>Bot sayısı</span><select id="botsel"><option>0</option><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select><select id="diff"><option value="0.7">Kolay</option><option value="1" selected>Normal</option><option value="1.4">Zor</option></select></div>
+<button id="bReady" class="primary" hidden>Hazırım</button><button id="bStart" class="primary" disabled>Oyunu Başlat</button><button id="bBack">← Geri</button></div></div>
 
-    <!-- Online Lobby Section -->
-    <div id="onlineBox" class="lobby-box" hidden>
-      <div class="row" style="justify-content:space-between;font-size:11.5px;padding:4px 8px;border-radius:9px;background:rgba(255,255,255,.04)">
-        <span id="p2pStatus">🟢 GitHub Pages WebRTC P2P Hazır</span>
-        <span id="p2pPing" style="color:var(--m)">STUN Aktif</span>
-      </div>
-      <div class="row">
-        <input id="nickInp" placeholder="Oyuncu adın..." maxlength="16" value="Komutan">
-      </div>
-      <div id="lobbyEntryRow" class="row">
-        <button id="createRoomBtn" class="primary-btn" style="flex:1;white-space:nowrap">🏠 Oda Kur</button>
-        <input id="roomCodeInp" placeholder="Oda Kodu (Örn: A7K9P2)" maxlength="8" style="text-transform:uppercase;flex:1">
-        <button id="joinRoomBtn" style="white-space:nowrap">Katıl</button>
-      </div>
+<div id="end" class="modal" hidden><div class="glass card"><h1 id="et"></h1><p id="ep"></p><button id="goOn" hidden>İzlemeye devam et</button><button id="go2" class="primary">Ana menü</button></div></div>
 
-      <div id="lobbyRoomView" class="lobby-box" hidden style="background:rgba(79,209,255,.06)">
-        <div class="row" style="justify-content:space-between;flex-wrap:wrap">
-          <div>
-            <small style="color:var(--m);display:block">ODA KODU</small>
-            <b id="roomCodeDisplay" style="font-size:18px;letter-spacing:.12em;color:var(--ac)">------</b>
-          </div>
-          <div class="row">
-            <button id="copyCodeBtn" style="padding:6px 9px;font-size:11.5px">📋 Kodu Kopyala</button>
-            <button id="copyLinkBtn" style="padding:6px 9px;font-size:11.5px">🔗 Davet Linki</button>
-            <button id="addBotPlayerBtn" style="padding:6px 9px;font-size:11.5px" title="Lobiye hazır bot oyuncusu ekler">🤖 +Bot Ekle</button>
-          </div>
-        </div>
-        <div id="lobbyPlayersList" style="display:flex;flex-direction:column;gap:4px;max-height:125px;overflow:auto"></div>
-        <div class="row" style="justify-content:space-between;font-size:12px;color:var(--m);padding:2px 4px">
-          <span>Boş kalan slotları yapay zeka (Bot) doldursun:</span>
-          <button id="fillBotsToggle" class="on" style="padding:4px 10px;font-size:11.5px">Açık ✓</button>
-        </div>
-        <div class="row">
-          <button id="readyBtn" style="flex:1;font-weight:600">✓ Hazır Ver</button>
-          <button id="leaveRoomBtn" style="padding:8px 10px;color:#ff5d73">Çık</button>
-        </div>
-      </div>
-    </div>
-
-    <p id="startSubText">Haritadan ya da listeden başlangıç ülkeni seç. Üretimi geliştir, hatlar kur ve dünyayı fethet.</p>
-    <input id="q" placeholder="Ülke ara… (Örn: Turkey, Greece, Germany)">
-    <div id="list"></div>
-    <button id="go" disabled>Bir ülke seç</button>
-  </div>
-</div>
-
-<!-- Floating pill when picking country directly on map while lobby is minimized -->
-<button id="reopenModalBtn" class="glass" hidden style="position:fixed;bottom:118px;left:50%;transform:translateX(-50%);z-index:9;padding:10px 18px;font-weight:700;border-color:#4fd1ff">
-  📋 Lobiye Dön / Başlat
-</button>
-
-<!-- End Game Modal -->
-<div id="end" class="modal" hidden>
-  <div class="glass card">
-    <h1 id="et"></h1>
-    <p id="ep"></p>
-    <button id="go2" class="primary-btn">Yeniden Oyna</button>
-  </div>
-</div>
-
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
 <script>
-window.onerror = function(m) {
-  var l = document.getElementById('list');
-  if (l) l.textContent = 'Hata: ' + m;
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+addEventListener('error',e=>{const t=$('err');if(t){t.hidden=false;t.textContent='Hata: '+e.message}});
+const S=1000/180,NS=6;
+
+/* Çevrimdışı kalınırsa devreye girecek yedek veri */
+const FALLBACK_DATA={"Canada": "-141,69 -128,70 -115,68 -95,72 -82,69 -80,63 -94,58 -82,55 -79,52 -78,62 -70,60 -62,57 -56,52 -60,47 -66,45 -67,47 -71,45 -75,45 -83,46 -89,48 -95,49 -123,49 -125,50 -131,54 -137,59 -141,60", "United States": "-123,49 -95,49 -89,48 -83,46 -75,45 -71,45 -67,47 -67,44 -70,42 -74,40 -76,37 -81,31 -80,26 -83,29 -89,30 -94,29 -97,26 -100,28 -104,29 -106,32 -111,31 -117,32 -121,35 -124,40 -124,46|-141,69 -156,71 -166,68 -165,62 -158,58 -152,59 -141,60", "Mexico": "-117,32 -111,31 -106,32 -104,29 -100,28 -97,26 -97,22 -94,18 -91,19 -90,21 -87,21 -88,18 -92,15 -96,16 -105,20 -106,23 -112,29", "Greenland": "-45,60 -52,65 -55,70 -60,76 -70,80 -30,83 -20,80 -20,72 -30,68 -40,64", "Cuba": "-85,22 -80,23 -74,20 -78,20", "Dominican Rep.": "-72,19.5 -69,19.5 -68,18 -71,18", "Guatemala": "-92,17 -89,18 -88,16 -89,14 -92,14.5", "Honduras": "-89,14 -88,16 -83,16 -83,14 -87,13", "Nicaragua": "-87,13 -83,14 -83,11 -86,11", "Costa Rica": "-86,11 -83,11 -82,9 -85,9", "Panama": "-85,9 -82,9 -77,8 -78,7 -82,8", "Colombia": "-77,8 -72,12 -67,6 -67,2 -70,-4 -75,-1 -79,1 -78,7", "Venezuela": "-72,12 -64,11 -60,8 -60,5 -64,2 -67,2 -67,6", "Guyana": "-60,8 -57,6 -56,2 -59,2 -60,5", "Suriname": "-57,6 -54,5 -54,2 -56,2", "Ecuador": "-80,1 -79,1 -75,-1 -75,-4 -80,-4 -81,-1", "Peru": "-81,-4 -75,-4 -70,-4 -69,-11 -69,-17 -71,-18 -76,-14 -81,-6", "Brazil": "-70,-4 -67,2 -64,2 -60,5 -54,5 -50,2 -48,-1 -35,-5 -35,-9 -39,-18 -41,-22 -48,-26 -53,-33 -57,-30 -54,-27 -56,-23 -58,-20 -58,-16 -65,-10 -69,-11", "Bolivia": "-69,-11 -65,-10 -58,-16 -58,-20 -62,-22 -67,-22 -69,-17", "Paraguay": "-58,-20 -55,-24 -54,-26 -58,-27 -62,-24 -62,-22", "Chile": "-70,-18 -68,-22 -69,-30 -70,-40 -72,-50 -74,-52 -69,-55 -69,-52 -72,-46 -73,-37 -71,-30 -70,-22", "Argentina": "-68,-22 -62,-22 -62,-24 -58,-27 -54,-27 -58,-34 -57,-38 -63,-41 -65,-45 -68,-50 -69,-55 -69,-52 -72,-50 -70,-40 -69,-30", "Uruguay": "-58,-30 -54,-33 -56,-35 -58,-34", "Iceland": "-24,64 -14,64 -14,66 -22,66", "United Kingdom": "-5,50 1,51 2,53 -2,57 -5,59 -6,56 -3,54 -5,52", "Ireland": "-10,52 -6,52 -6,55 -10,54", "Norway": "5,59 8,58 11,59 12,62 18,68 28,71 20,69 14,66 8,63 5,62", "Sweden": "11,59 13,56 16,56 19,60 21,64 24,66 20,69 18,68 12,62", "Finland": "22,60 30,60 31,63 29,70 24,68 24,65", "France": "-4,48 -1,46 -2,43 3,42 7,43 8,47 4,50 2,51 -1,49", "Spain": "-9,43 -2,43 3,42 0,38 -2,36 -6,36 -9,37", "Portugal": "-9,37 -9,42 -7,42 -7,38", "Germany": "6,51 7,54 14,54 15,51 13,48 8,47 6,49", "Italy": "7,44 13,47 13,45 17,41 16,38 12,41 9,44", "Poland": "14,54 19,55 24,54 24,50 19,49 15,51", "Ukraine": "24,50 24,52 32,52 40,50 38,47 33,45 30,46 26,48", "Belarus": "24,52 24,55 30,56 32,53 30,51", "Romania": "21,46 26,48 30,46 29,44 23,44", "Bulgaria": "23,44 29,44 28,42 23,42", "Hungary": "16,47 22,48 21,46 17,46", "Greece": "20,40 23,41 26,41 24,37 22,37", "Turkey": "26,42 33,42 41,41 44,40 44,37 36,36 29,36 26,38", "Russia": "30,60 28,70 40,67 60,69 70,73 100,77 140,72 180,69 180,65 160,60 143,59 140,53 135,43 131,43 130,48 120,53 110,50 90,50 80,51 60,52 48,46 48,42 40,43 38,47 40,50 32,52 31,56 28,57", "Kazakhstan": "48,46 60,52 80,51 87,49 80,43 70,41 56,41 53,45", "Turkmenistan": "53,40 56,41 60,38 62,36 54,37", "Uzbekistan": "56,41 70,41 66,38 60,38", "Iran": "44,40 48,38 54,37 61,36 61,26 56,26 50,30 46,33 44,37", "Iraq": "39,37 44,37 46,33 48,30 43,30 39,32", "Syria": "36,36 42,37 39,32 36,33", "Jordan": "36,33 39,32 37,29 35,30", "Saudi Arabia": "36,29 39,32 43,30 48,30 50,26 56,24 52,17 43,17 39,21", "Yemen": "43,17 52,17 46,13 43,13", "Oman": "56,24 60,22 57,18 52,17", "Afghanistan": "61,36 66,38 71,37 75,36 70,31 66,30 62,30", "Pakistan": "61,26 62,30 66,30 70,31 75,36 76,32 71,27 68,24", "India": "68,24 71,27 76,32 79,35 88,28 92,27 89,22 80,15 77,8 73,16 72,21", "Nepal": "80,29 88,26.5 88,28 81,30", "Bangladesh": "88,22 92,22 92,26 89,26", "Sri Lanka": "80,6 82,7 81,9 80,9", "China": "74,39 80,43 87,49 95,45 110,43 117,47 120,53 135,48 131,43 124,40 121,37 122,31 118,24 110,21 106,22 99,22 97,28 88,28 79,35", "Mongolia": "88,49 99,52 115,50 117,47 110,43 95,45", "Japan": "130,32 135,35 140,41 142,45 145,43 141,38 140,35 133,34", "South Korea": "126,35 129,35 129,38 127,38", "North Korea": "125,38 127,38 129,38 130,42 125,40", "Myanmar": "92,27 98,28 100,22 98,16 97,10 94,17", "Thailand": "98,16 100,22 105,18 102,13 100,7 98,10", "Vietnam": "102,22 106,23 108,16 109,12 105,9 105,18", "Malaysia": "100,6 104,2 103,1 101,3", "Indonesia": "95,5 98,4 105,-5 102,-4|106,-6 114,-7 114,-9 106,-8|109,1 117,7 119,1 116,-4 110,-3|119,0 125,1 122,-5|131,-1 141,-3 141,-9 137,-8", "Philippines": "120,18 122,18 126,7 122,7 120,14", "Papua New Guinea": "141,-3 147,-6 150,-10 141,-9", "Australia": "114,-22 122,-17 130,-12 136,-12 142,-11 146,-19 153,-26 150,-37 141,-38 134,-33 129,-32 115,-34", "New Zealand": "172,-35 178,-38 175,-41 172,-44 168,-46 167,-45 172,-41", "Morocco": "-13,28 -9,32 -6,35 -2,35 -2,32 -8,28", "Algeria": "-8,28 -2,32 -2,35 8,37 10,33 9,30 12,24 4,19 -5,25", "Tunisia": "8,37 11,37 11,33 10,33", "Libya": "10,33 11,33 20,32 25,32 25,20 15,23 12,24 9,30", "Egypt": "25,32 31,31 34,29 33,25 36,22 25,22", "Sudan": "25,22 36,22 37,18 36,14 34,9 27,10 24,12 22,15 24,20", "South Sudan": "24,12 27,10 34,9 35,5 30,4 25,5", "Ethiopia": "34,9 36,14 43,12 48,8 42,4 36,4 35,5", "Somalia": "43,12 51,12 51,10 48,5 41,-1 42,4 48,8", "Kenya": "36,4 42,4 41,-1 39,-4 34,-1 34,4", "Uganda": "30,4 34,4 34,-1 30,-1", "Tanzania": "30,-1 34,-1 39,-4 40,-10 35,-11 30,-8", "DR Congo": "16,-6 18,3 25,5 30,4 30,-1 30,-8 28,-12 22,-13 22,-8", "Congo": "11,-4 12,2 16,3 18,2 16,-5 14,-5", "Cameroon": "9,4 14,12 15,8 16,3 12,2", "Gabon": "9,1 12,2 12,-4 9,-1", "Nigeria": "3,6 3,12 8,13 14,13 14,8 9,4", "Niger": "3,12 4,19 12,23 15,20 14,13 8,13", "Chad": "14,13 15,20 15,23 24,20 24,12 22,10 16,8", "Mali": "-12,15 -5,25 4,19 3,12 -5,10 -11,12", "Mauritania": "-17,21 -13,28 -8,28 -5,25 -12,15 -17,16", "Senegal": "-17,15 -12,15 -12,12 -16,12", "Ivory Coast": "-8,5 -3,5 -3,10 -8,10", "Ghana": "-3,5 1,6 1,11 -3,11", "Burkina Faso": "-5,10 -3,11 3,12 1,14 -5,14", "Angola": "12,-6 13,-17 21,-18 22,-13 22,-8 16,-6", "Zambia": "22,-13 28,-12 33,-9 33,-14 25,-18 22,-18", "Mozambique": "33,-10 40,-10 41,-15 35,-24 32,-26 32,-18 33,-14", "Zimbabwe": "25,-18 33,-17 32,-22 27,-22", "Namibia": "12,-17 21,-18 20,-25 20,-29 17,-29 14,-22", "Botswana": "21,-18 25,-18 27,-23 22,-26 20,-24", "South Africa": "17,-29 20,-29 22,-26 27,-23 32,-26 32,-29 27,-34 20,-35 18,-33", "Madagascar": "44,-17 49,-12 50,-16 47,-25 44,-24", "Netherlands": "3.5,51.5 6,51 7,53.5 4.5,53", "Belgium": "2.5,51 6,50 6,51 4,51.5", "Denmark": "8,55 10,57.5 12,56 10,54.8", "Austria": "10,47 13,47.6 17,48 16,46.5 12,46.5", "Czechia": "12,50 15,51 19,49.5 17,48.5 13,49", "Slovakia": "17,48.5 22,49 21,48 18,47.8", "Switzerland": "6,46 8,47.6 10,47 9,46", "Serbia": "19,46 22,45 22.5,43 20,42.5 19,44", "Croatia": "13.5,45.5 16,46.5 19,45.5 17,43.5 15,44", "Bosnia": "16,45 19,45 19,43.5 17,43.5", "Albania": "19.5,42 20.5,41 20,40 19.3,40.5", "Lithuania": "21,56 26,56 26,54 23,54", "Latvia": "21,57 28,57.5 27,56 21,56.5", "Estonia": "23,58.5 28,59.5 28,57.5 24,57.5", "Moldova": "27,48 30,48.5 30,46.5 28,46.5", "Georgia": "41,43 46,42 45,41 41,41.5", "Armenia": "43.5,41 46,41 46,39 44,39", "Azerbaijan": "46,42 49,41 49,38.5 46,39", "Israel": "34.3,31.5 35.5,33 35.7,31 34.5,29.5", "Kuwait": "46.5,30 48.4,30 48,28.5 47,28.5", "UAE": "51.5,24.2 56,26 56.5,24 52,22.8", "Tajikistan": "67,39 74,39 74,37 70,37", "Kyrgyzstan": "70,42 80,43 77,40 72,39.5", "Laos": "100,22 105,21 107,18 104,14 102,17", "Cambodia": "102,14 105,14.5 107,12 104,10.5 102.5,12", "Taiwan": "120,25 122,25 121,22 120,23", "Guinea": "-14,12.5 -11,12.5 -8,10 -9,8 -13,9.5", "Sierra Leone": "-13,9 -10.5,9.5 -10.5,7 -12.5,7", "Liberia": "-11.5,7 -8.5,7.5 -8,4.5 -11,6", "Benin": "1.7,6.3 3.5,6.3 3,12 1,10", "Togo": "0,6 1.7,6 1.2,11 0,10", "Central African Rep.": "15,8 16,3 25,5 24,10 19,10", "Eritrea": "36,14 38,18 43,13 40,14", "Malawi": "33,-9.5 35,-10 35,-15 33.5,-14", "Haiti": "-74.5,19.8 -72.5,19.8 -72,18.5 -74.5,18.2", "Jamaica": "-78.4,18.4 -76.2,18.2 -77,17.8"};
+
+const C=[];
+function buildCountryFromRings(nm, rings){
+ const path=new Path2D();let best=null,ba=-1,tot=0,realTot=0,gx0=1e9,gy0=1e9,gx1=-1e9,gy1=-1e9;
+ for(const r of rings){
+  if(r.length<3)continue;
+  path.moveTo(r[0][0],r[0][1]);
+  let a=0,cx=0,cy=0,x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+  for(let i=0;i<r.length;i++){
+   const p=r[i],q=r[(i+1)%r.length];
+   if(i)path.lineTo(p[0],p[1]);
+   const cr=p[0]*q[1]-q[0]*p[1];
+   a+=cr;cx+=(p[0]+q[0])*cr;cy+=(p[1]+q[1])*cr;
+   x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);y0=Math.min(y0,p[1]);y1=Math.max(y1,p[1]);
+  }
+  path.closePath();
+  gx0=Math.min(gx0,x0);gy0=Math.min(gy0,y0);gx1=Math.max(gx1,x1);gy1=Math.max(gy1,y1);
+  const absA=Math.abs(a)/2;tot+=absA;
+  const midLat=90-((y0+y1)/2)/S;
+  const latFactor=Math.max(0.22,Math.cos(midLat*Math.PI/180));
+  realTot+=absA*latFactor;
+  if(absA>ba){
+   ba=absA;
+   if(Math.abs(a)>1e-5)best=[cx/(3*a),cy/(3*a)];
+   else best=[(x0+x1)/2,(y0+y1)/2];
+  }
+ }
+ if(!best||tot<=0)return null;
+ return {name:nm,path,x:best[0],y:best[1],area:tot,realArea:realTot,sz:Math.sqrt(tot),af:1,pwr:1,nCap:25,owner:-1,troops:0,capital:false,lost:0,att:-1,combatT:0,bb:[gx0,gy0,gx1,gy1]};
+}
+
+function assignCountryPowers(arr){
+ let maxReal=1;
+ for(const c of arr)if(c.realArea>maxReal)maxReal=c.realArea;
+ for(const c of arr){
+  const ratio=Math.min(1,Math.max(0.0002,c.realArea/maxReal));
+  c.pwr=+(0.42+2.58*Math.pow(ratio,0.29)).toFixed(2);
+  c.af=c.pwr;
+  c.nCap=Math.round(8+23*Math.pow(c.pwr,2.15));
+ }
+}
+
+function loadFallbackMap(){
+ C.length=0;
+ for(const nm in FALLBACK_DATA){
+  const rings=FALLBACK_DATA[nm].split('|').map(ps=>ps.trim().split(/\s+/).map(q=>{const a=q.split(',');return[(+a[0]+180)*S,(90-a[1])*S]}));
+  const c=buildCountryFromRings(nm,rings);
+  if(c)C.push(c);
+ }
+ assignCountryPowers(C);
+ C.sort((a,b)=>b.area-a.area);C.forEach((c,i)=>c.id=i);
+}
+
+async function loadAccurateWorldMap(){
+ try{
+  if(!window.topojson)throw new Error('TopoJSON yok');
+  const res=await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json');
+  const world=await res.json();
+  const feats=topojson.feature(world,world.objects.countries).features;
+  const temp=[];
+  for(const f of feats){
+   const nm=(f.properties&&f.properties.name)||'';
+   if(!nm||nm==='Antarctica'||nm.includes('Southern')||nm.includes('Heard'))continue;
+   const geom=f.geometry;if(!geom)continue;
+   const polys=geom.type==='Polygon'?[geom.coordinates]:geom.type==='MultiPolygon'?geom.coordinates:[];
+   if(!polys.length)continue;
+
+   let bestLen=0,refLon=0;
+   for(const poly of polys){
+    const outer=poly[0];
+    if(outer&&outer.length>bestLen){bestLen=outer.length;refLon=outer[0][0]}
+   }
+
+   const rings=[];
+   for(const poly of polys){
+    for(const ring of poly){
+     if(!ring||ring.length<3)continue;
+     const pts=[];
+     let prevLon=ring[0][0];
+     if(refLon>100&&prevLon<-100)prevLon+=360;
+     else if(refLon<-100&&prevLon>100)prevLon-=360;
+     for(let i=0;i<ring.length;i++){
+      let lon=ring[i][0],lat=ring[i][1];
+      while(lon-prevLon>180)lon-=360;
+      while(lon-prevLon<-180)lon+=360;
+      prevLon=lon;
+      pts.push([(lon+180)*S,(90-lat)*S]);
+     }
+     rings.push(pts);
+    }
+   }
+   const c=buildCountryFromRings(nm,rings);
+   if(c&&c.area>=1.2)temp.push(c);
+  }
+  if(temp.length>100&&mode!=='play'){
+   assignCountryPowers(temp);
+   C.length=0;
+   temp.sort((a,b)=>b.area-a.area);
+   temp.forEach((c,i)=>{c.id=i;C.push(c)});
+   C.forEach(c=>{c.capital=false;c.lost=0;c.att=-1;c.combatT=0;c.owner=-1;c.troops=Math.round(c.nCap*(0.92+Math.random()*0.16))});
+   sigM='';sigL='';
+   if(mode==='lobby'){fillList();renderLobby()}
+  }
+ }catch(_){
+  if(!C.length){loadFallbackMap();resetState();sigM='';sigL=''}
+ }
+}
+
+loadFallbackMap();
+
+const PAL=[{n:'Mavi',c:'#4fd1ff'},{n:'Kızıl',c:'#ff5d73'},{n:'Altın',c:'#ffb84d'},{n:'Mor',c:'#a78bfa'},{n:'Yeşil',c:'#4ade80'},{n:'Pembe',c:'#f472b6'}];
+const col=o=>o<0?'#8d9bb0':PAL[o].c;
+const cv=$('c'),ctx=cv.getContext('2d'),cv0=$('c0'),c0=cv0.getContext('2d'),cv1=$('c1'),c1=cv1.getContext('2d');let sigM='',sigL='',dynOn=true;
+let D=1,W=0,H=0,v={k:1,x:0,y:0},fitK=1,mouse={x:0,y:0},touch=false;
+let mode='menu',role='solo',me=0,speed=1,gameT=0,aiL=0,botSel=3,outShown=false,wonShown=false,botT=0,chkT=0,hudT=0,bcT=0;
+let botDiff=1,muted=false,AC=null,slots=[],G=[],LV=[],links=[],armies=[],botG=[],botAg=[],hover=null,peer=null,conn=null,code='',joinTimer=null;
+let foeIdx=0,pingTarget=null,foeSig='';
+const sel=new Set();
+function emptySlots(){slots=Array.from({length:NS},()=>({type:'none',name:'',pick:-1,ready:false}))}
+function resetState(){G=Array(NS).fill(0);LV=Array.from({length:NS},()=>({g:0,spd:0,inc:0,fl:0,ln:0}));links=[];armies=[];sel.clear();aiL=0;gameT=0;outShown=false;wonShown=false;pingTarget=null;foeSig='';
+ botG=Array.from({length:NS},()=>({}));botAg=Array.from({length:NS},()=>(.75+Math.random()*.55)*botDiff);
+ C.forEach(c=>{c.capital=false;c.lost=0;c.att=-1;c.combatT=0;c.owner=-1;c.troops=Math.round(c.nCap*(0.92+Math.random()*0.16))})}
+emptySlots();resetState();
+loadAccurateWorldMap();
+
+function resize(){D=Math.min(1.5,window.devicePixelRatio||1);W=innerWidth;H=innerHeight;for(const x of [cv,cv0,cv1]){x.width=W*D;x.height=H*D}sigM='';sigL='';fitK=Math.max(W/2000,H/860);if(!v.set){v.k=fitK;v.x=0;v.y=H/2-430*v.k;v.set=1}}
+addEventListener('resize',resize);resize();
+
+/* ---------- oyun matematiği ---------- */
+const isBot=o=>o>=0&&slots[o]&&slots[o].type==='bot';
+const B=o=>isBot(o)?aiL:0;
+const mult=o=>o<0?1:1+.3*LV[o].g+B(o), spdM=o=>o<0?1:1+.25*LV[o].spd+B(o)*.3;
+const flowM=o=>(isBot(o)?.9:1)*(1+.25*LV[o].fl+B(o)*.3), incM=o=>1+.35*LV[o].inc, maxL=o=>2+LV[o].ln+(B(o)>.5?1:0);
+const prod=c=>c.owner<0?(c.troops<c.nCap?0.12*c.pwr:0):(0.95*c.pwr*mult(c.owner)*(c.capital?1.35:1));
+const ref=c=>40+110*c.pwr;
+const cost=l=>Math.round(70*Math.pow(1.5,l));
+const UP=[{k:'g',n:'Asker Hızı',d:'+30% üretim (tüm ülkeler)'},{k:'spd',n:'Ordu Hızı',d:'+25% yürüyüş'},{k:'inc',n:'Altın Hızı',d:'+35% altın geliri'},{k:'fl',n:'Akış Hızı',d:'+25% hat akışı'},{k:'ln',n:'Hat Sayısı',d:'+1 hat / ülke'}];
+const mk=(s,t,o,n,lk)=>({s,t,o,n,lk,p:0,dur:Math.max(.5,Math.hypot(t.x-s.x,t.y-s.y)/(110*spdM(o)))});
+
+function getAttacker(c){
+ if(c.combatT>0&&c.att>=0&&c.att!==c.owner)return c.att;
+ for(let i=0;i<armies.length;i++){const a=armies[i];if(a.t===c&&a.o!==c.owner)return a.o}
+ return -1;
+}
+
+function addLink(o,s,t){if(s.owner!==o||s===t)return 0;if(links.some(L=>L.s===s&&L.t===t))return 0;
+ const rv=links.findIndex(L=>L.s===t&&L.t===s&&L.o===o);if(rv>=0)links.splice(rv,1);
+ if(links.filter(L=>L.s===s).length>=maxL(o))return 2;links.push({s,t,o,acc:Math.random()});return 1}
+function burst(o,s,t){const n=Math.floor(s.troops*.5);if(n<1||s.owner!==o||s===t)return;s.troops-=n;armies.push(mk(s,t,o,n,0))}
+function exec(o,m){let r=null;
+ if(m.k==='link'||m.k==='burst'){const t=C[m.t];if(!t)return;for(const i of m.f){const s=C[i];if(!s)continue;
+  if(m.k==='burst')burst(o,s,t);else if(addLink(o,s,t)===2)r='Hat limiti dolu ('+maxL(o)+' hat/ülke). "Hat Sayısı" yükseltmesini al ya da bir hattı kes.'}}
+ else if(m.k==='cut'){const i=links.findIndex(L=>L.s.id===m.s&&L.t.id===m.t&&L.o===o);if(i>=0)links.splice(i,1)}
+ else if(m.k==='cutc'){for(let i=links.length-1;i>=0;i--)if(links[i].o===o&&links[i].s.id===m.c)links.splice(i,1)}
+ else if(m.k==='cuta'){for(let i=links.length-1;i>=0;i--)if(links[i].o===o)links.splice(i,1)}
+ else if(m.k==='aid'){const t=C[m.t];if(!t||t.owner!==o)return 'Yardım edilecek ülke bulunamadı';let n=0,k=0;
+  for(const c of C){if(c.owner!==o||c===t)continue;const x=Math.floor(c.troops*.1);if(x<1||c.troops<x+1)continue;c.troops-=x;armies.push(mk(c,t,o,x,0));n+=x;k++}
+  r=k?'Yardım: '+k+' ülkeden '+n+' asker → '+t.name:'Yardım gönderecek yeterli asker yok'}
+ else if(m.k==='up'){const l=LV[o][m.u];if(l===undefined||l>=12)return;const c=cost(l);if(G[o]>=c){G[o]-=c;LV[o][m.u]++}else r='Yetersiz altın'}
+ return r}
+function cmd(m){if(mode!=='play')return;if(role==='guest'){conn&&conn.open&&conn.send({t:'cmd',m})}else{const r=exec(me,m);if(r)toast(r)}}
+
+function beep(k){if(muted)return;try{const X=window.AudioContext||window.webkitAudioContext;AC=AC||new X();const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime;
+ o.type='sine';o.frequency.value=[190,520,760][k]||440;g.gain.setValueAtTime(.06,t);g.gain.exponentialRampToValueAtTime(.0001,t+.25);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+.26)}catch(_){}}
+function note(o,m,k){if(o<0||!slots[o]||slots[o].type!=='human')return;if(o===me){toast(m);beep(k)}else if(slots[o].conn&&slots[o].conn.open)slots[o].conn.send({t:'ev',m,s:k})}
+function arrive(a){const t=a.t;if(t.owner===a.o){t.troops+=a.n;return}
+ if(isBot(t.owner))botG[t.owner][a.o]=(botG[t.owner][a.o]||0)+a.n;
+ const was=t.troops;t.troops-=a.n;t.lost=(t.lost||0)+Math.min(a.n,Math.max(0,was));
+ t.att=a.o;t.combatT=1.5;
+ if(t.troops<0){const prev=t.owner;t.owner=a.o;t.troops=-t.troops;t.lost=0;t.att=-1;t.combatT=0;
+  if(t.capital&&slots[a.o]&&slots[a.o].type==='human')G[a.o]+=150;
+  note(prev,'Kaybettin: '+t.name,0);note(a.o,'Fethettin: '+t.name+' (⚡×'+t.pwr.toFixed(1)+')'+(t.capital?' ★ (+150 altın)':''),1)}}
+function step(dtr){const dt=dtr*speed;if(!dt)return;gameT+=dt;
+ for(const c of C){c.troops+=prod(c)*dt;if(c.lost){c.lost*=Math.max(0,1-.04*dt);if(c.lost<.5)c.lost=0}if(c.combatT>0){c.combatT=Math.max(0,c.combatT-dt);if(!c.combatT)c.att=-1}}
+ const cnt=Array(NS).fill(0);for(const c of C)if(c.owner>=0)cnt[c.owner]++;
+ for(let o=0;o<NS;o++)if(slots[o].type==='human')G[o]+=cnt[o]*5*incM(o)*dt;
+ aiL+=dt*.0012*botDiff;
+ for(let i=links.length-1;i>=0;i--)if(links[i].s.owner!==links[i].o)links.splice(i,1);
+ const ss={};for(const L of links)ss[L.s.id]=(ss[L.s.id]||0)+.5*flowM(L.o);
+ for(const L of links){const sh=.5*flowM(L.o)/Math.max(1,ss[L.s.id]);L.acc=Math.min(5,L.acc+prod(L.s)*sh*dt);
+  const n=Math.floor(L.acc);if(n>=1&&L.s.troops>=n+1){L.acc-=n;L.s.troops-=n;armies.push(mk(L.s,L.t,L.o,n,1))}}
+ for(const a of armies)a.p+=dt/a.dur;
+ const bk=new Map();for(const a of armies){const k=a.s.id<a.t.id?a.s.id+'-'+a.t.id:a.t.id+'-'+a.s.id;let l=bk.get(k);if(!l)bk.set(k,l=[]);l.push(a)}
+ for(const arr of bk.values()){if(arr.length<2)continue;
+  for(const a of arr){if(a.n<=0)continue;for(const b of arr){if(b.n<=0||b.o===a.o||a.s!==b.t||a.t!==b.s)continue;
+   if(a.p+b.p>=1){const m=Math.min(a.n,b.n);a.n-=m;b.n-=m;if(a.n<=0)break}}}}
+ for(let i=armies.length-1;i>=0;i--){const a=armies[i];if(a.n<=0){armies.splice(i,1);continue}if(a.p>=1){arrive(a);armies.splice(i,1)}}
+ botT+=dt;if(botT>3){botT=0;if(gameT>6)for(let o=0;o<NS;o++)if(isBot(o))botThink(o)}
+ chkT+=dt;if(chkT>1){chkT=0;check()}}
+
+/* ---------- bot zekâsı ---------- */
+function botThink(f){const own=C.filter(c=>c.owner===f);if(!own.length)return;
+ const ag=botAg[f],g=botG[f];for(const k in g)g[k]*=.85;
+ const att={},mine={},thr={},byS=new Map();
+ for(const L of links){const id=L.t.id;if(L.o===f){if(L.t.owner!==f)mine[id]=(mine[id]||0)+1;let a=byS.get(L.s);if(!a)byS.set(L.s,a=[]);a.push(L)}else if(L.t.owner===f)thr[id]=(thr[id]||0)+1;else att[id]=(att[id]||0)+1}
+ const tot=Array(NS).fill(0);let sum=1;for(const c of C)if(c.owner>=0){tot[c.owner]+=c.troops;sum+=c.troops}
+ const ml=maxL(f),lc=s=>byS.get(s)||[],push=Math.min(30,gameT*.08)*ag;
+ let nOff=links.filter(L=>L.o===f&&L.t.owner!==f).length,added=0;const offCap=Math.max(1,own.length);
+ for(const s of own){let ls=lc(s);
+  for(const L of ls.slice()){const t=L.t;if(t.owner===f?t.troops>s.troops*1.2+20:(t.troops>s.troops*1.4+12&&(mine[t.id]||0)<2)){links.splice(links.indexOf(L),1);ls.splice(ls.indexOf(L),1)}}
+  if(thr[s.id]&&s.troops<ref(s)*.6&&ls.length<ml){let h=null,hb=0;
+   for(const x of own){if(x===s||x.troops<s.troops+6||lc(x).length>=ml||lc(x).some(L=>L.t===s))continue;const d=Math.hypot(x.x-s.x,x.y-s.y);if(d<380&&x.troops>hb){hb=x.troops;h=x}}
+   if(h&&addLink(f,h,s)===1){let a=byS.get(h);if(!a)byS.set(h,a=[]);a.push(links[links.length-1]);continue}}
+  if(ls.length<ml&&s.troops>12&&nOff<offCap&&added<1&&Math.random()<.75){const has=new Set(ls.map(L=>L.t.id));let best=null,bs=-1e9;
+   for(const t of C){if(t.owner===f||has.has(t.id))continue;const dx=t.x-s.x,dy=t.y-s.y;if(Math.abs(dx)>480||Math.abs(dy)>480)continue;const d=Math.hypot(dx,dy);if(d>480)continue;
+    if(t.owner>=0&&s.troops<t.troops*.25)continue;
+    if(t.owner<0&&s.troops*(1+(mine[t.id]||0))<t.troops*.62)continue;
+    let sc=t.pwr*11+(t.owner<0?6:0)-t.troops*.32/ag-d*.045-(att[t.id]||0)*3.5+(mine[t.id]||0)*4+Math.random()*3;
+    if(t.capital)sc+=3;
+    if(t.owner>=0){sc+=push+Math.min(6,(g[t.owner]||0)*.15)+(tot[t.owner]/sum>.4?2.5:0)}
+    if(sc>bs){bs=sc;best=t}}
+   if(best&&bs>-4&&addLink(f,s,best)===1){nOff++;added++;mine[best.id]=(mine[best.id]||0)+1;ls.push(links[links.length-1]);byS.set(s,ls)}}}}
+
+/* ---------- bitiş ---------- */
+function check(){
+ const alive=new Set();let hasNeutral=false;
+ for(const c of C){if(c.owner>=0)alive.add(c.owner);else hasNeutral=true}
+ for(const a of armies)if(a.o>=0)alive.add(a.o);
+ const participants=slots.filter(s=>s.type==='human'||s.type==='bot').length;
+ if(!wonShown&&alive.size===1&&(participants>1||!hasNeutral)){wonShown=true;end([...alive][0]);return}
+ if(!hasNeutral&&alive.size===1){end([...alive][0]);return}
+ const hum=slots.some((s,o)=>s.type==='human'&&alive.has(o));if(!hum)end(-2);
+}
+function end(w){if(mode==='over')return;mode='over';if(role==='host')bcast({t:'end',w});showEnd(w)}
+function showEnd(w){$('end').hidden=false;$('goOn').hidden=!(w===-3||w===me);
+ $('goOn').textContent=w===me?'Kalan adaları fethetmeye devam et':'İzlemeye devam et';
+ if(w===me){$('et').textContent='Dünyanın Fatihi! 🏆';$('ep').textContent='Dünyada başka hiçbir rakip kalmadı, mutlak hâkimiyet senin!'}
+ else if(w===-3){$('et').textContent='Elendin';$('ep').textContent='Tüm topraklarını kaybettin. İstersen oyunu izlemeye devam edebilirsin.'}
+ else if(w===-2){$('et').textContent='Yenildin';$('ep').textContent='Hiçbir oyuncu ayakta kalmadı.'}
+ else{$('et').textContent=(slots[w]?slots[w].name||PAL[w].n:'?')+' Dünyanın Fatihi!';$('ep').textContent='Dünyada tek güç olarak mutlak hâkimiyeti kurdu.'}}
+
+/* ---------- ağ / lobi (Sabit Oda Kodu & Güçlendirilmiş WebRTC Bağlantısı) ---------- */
+const PEER_CFG={
+ debug:1,
+ config:{
+  iceServers:[
+   {urls:'stun:stun.l.google.com:19302'},
+   {urls:'stun:stun1.l.google.com:19302'},
+   {urls:'stun:stun2.l.google.com:19302'},
+   {urls:'stun:global.stun.twilio.com:3478'}
+  ]
+ }
 };
-(function() {
-  /* =========================================================================
-   * 1. HIGH-DEFINITION WORLD MAP GEOMETRY & PROJECTION
-   * ========================================================================= */
-  const S = 1000 / 180;
-  function sm(r) {
-    for (let k = 0; k < 3; k++) {
-      const o = [];
-      for (let i = 0; i < r.length; i++) {
-        const p = r[i], q = r[(i + 1) % r.length];
-        o.push([p[0] * .75 + q[0] * .25, p[1] * .75 + q[1] * .25], [p[0] * .25 + q[0] * .75, p[1] * .25 + q[1] * .75]);
-      }
-      r = o;
-    }
-    return r;
+
+/* Kullanıcının yazdığı kodu Türkçe karakter / boşluk sorunlarından arındırır, asla rastgele değiştirmez */
+function cleanCode(str){
+ if(!str)return '';
+ const trMap={'ç':'C','Ç':'C','ğ':'G','Ğ':'G','ı':'I','I':'I','i':'I','İ':'I','ö':'O','Ö':'O','ş':'S','Ş':'S','ü':'U','Ü':'U'};
+ return str.trim().replace(/[çÇğĞıIiİöÖşŞüÜ]/g,m=>trMap[m]||m).toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,12);
+}
+
+function cleanupPeer(){
+ if(joinTimer){clearInterval(joinTimer);joinTimer=null}
+ if(conn){try{conn.close()}catch(_){}conn=null}
+ if(peer){try{peer.destroy()}catch(_){}peer=null}
+}
+addEventListener('beforeunload',cleanupPeer);
+
+function toast(m){const t=$('toast');t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>{t.hidden=true},3000)}
+function bcast(m){for(const s of slots)if(s.type==='human'&&s.conn&&s.conn.open)s.conn.send(m)}
+const pub=()=>slots.map(s=>({ty:s.type,name:s.name,pick:s.pick,ready:s.ready}));
+function bcLobby(){renderLobby();bcast({t:'lobby',p:pub(),bots:botSel,code})}
+function focus(c){v.k=Math.max(fitK,Math.min(8,260/Math.max(8,c.sz)));v.x=W/2-c.x*v.k;v.y=H/2-c.y*v.k}
+function focusEnemyCountry(c){
+ if(!c)return;
+ focus(c);
+ pingTarget={c,until:performance.now()+3500};
+}
+function getEnemyCountries(){
+ return C.filter(c=>c.owner>=0&&c.owner!==me).sort((a,b)=>a.area-b.area);
+}
+function showLobby(){
+ mode='lobby';$('menu').hidden=true;$('lobby').hidden=false;
+ $('coderow').hidden=role==='solo';
+ $('lcode').value=code;
+ $('lcode').readOnly=role!=='host';
+ $('setCode').hidden=role!=='host';
+ $('bBack').hidden=false;
+ fillList();renderLobby();
+}
+function fillList(){const q=$('q').value.toLowerCase(),l=$('list');l.innerHTML='';
+ [...C].sort((a,b)=>a.name.localeCompare(b.name)).filter(c=>c.name.toLowerCase().includes(q)).forEach(c=>{const b=document.createElement('button');
+  b.innerHTML='<span>'+c.name+'</span><small>⚡×'+c.pwr.toFixed(2)+'</small>';
+  const o=slots.findIndex((s,i)=>s.type==='human'&&s.pick===c.id);if(o===me)b.className='on';else if(o>=0)b.className='dis';b.onclick=()=>pickCountry(c.id);l.appendChild(b)})}
+function renderLobby(){
+ if(role!=='solo'&&document.activeElement!==$('lcode'))$('lcode').value=code;
+ $('plist').innerHTML=slots.map((s,i)=>s.type==='human'?'<div class="pl"><i style="background:'+PAL[i].c+'"></i><b>'+s.name+(i===me?' (sen)':'')+'</b><span>'+(s.pick>=0&&C[s.pick]?C[s.pick].name+' (×'+C[s.pick].pwr.toFixed(1)+')':'ülke seçmedi')+'</span><em>'+(i===0||s.ready?'✔':'…')+'</em></div>':'').join('');
+ const m=slots[me]||{};$('bReady').hidden=role!=='guest';$('bStart').hidden=role==='guest';$('botrow').hidden=role==='guest';$('botsel').value=botSel;
+ $('bReady').textContent=m.ready?'Hazır ✔ (geri al)':'Hazırım';
+ const ok=slots[0].pick>=0&&slots.every((s,i)=>s.type!=='human'||i===0||(s.pick>=0&&s.ready));
+ $('bStart').disabled=!ok;$('bStart').textContent=ok?'Oyunu Başlat':(slots[0].pick<0?'Bir ülke seç':'Herkes hazır olmalı');fillList()}
+function pickCountry(i){if(role==='guest'){conn&&conn.open&&conn.send({t:'pick',c:i});focus(C[i]);return}
+ if(slots.some((s,k)=>k!==me&&s.type==='human'&&s.pick===i)){toast('Bu ülke başkası tarafından seçildi');return}
+ slots[me].pick=i;focus(C[i]);role==='host'?bcLobby():renderLobby()}
+const rnd=()=>{const a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<5;i++)s+=a[Math.random()*a.length|0];return s};
+
+/* Oda kurma: Kullanıcının belirlediği kodu kesin olarak korur, asla rastgele başka koda atlamaz */
+function hostRoom(customCode){
+ if(!window.Peer){$('net').textContent='Online mod için internet bağlantısı (PeerJS) gerekli.';return}
+ const desired=cleanCode(customCode!==undefined?customCode:$('jcode').value);
+ code=desired||rnd();
+ $('jcode').value=code;
+ $('net').textContent='"'+code+'" koduyla oda kuruluyor…';
+ cleanupPeer();
+ peer=new Peer('wcq-room-'+code,PEER_CFG);
+ peer.on('open',()=>{
+  $('net').textContent='';
+  role='host';me=0;
+  if(mode!=='lobby'){
+   emptySlots();
+   slots[0]={type:'human',name:'Oyuncu 1',pick:-1,ready:true};
+   showLobby();
+  }else{
+   $('lcode').value=code;
+   toast('Oda kodu "'+code+'" olarak güncellendi');
+   bcLobby();
   }
-  const DATA = {"Canada": "-141,69 -128,70 -115,68 -95,72 -82,69 -80,63 -94,58 -82,55 -79,52 -78,62 -70,60 -62,57 -56,52 -60,47 -66,45 -67,47 -71,45 -75,45 -83,46 -89,48 -95,49 -123,49 -125,50 -131,54 -137,59 -141,60", "United States": "-123,49 -95,49 -89,48 -83,46 -75,45 -71,45 -67,47 -67,44 -70,42 -74,40 -76,37 -81,31 -80,26 -83,29 -89,30 -94,29 -97,26 -100,28 -104,29 -106,32 -111,31 -117,32 -121,35 -124,40 -124,46|-141,69 -156,71 -166,68 -165,62 -158,58 -152,59 -141,60", "Mexico": "-117,32 -111,31 -106,32 -104,29 -100,28 -97,26 -97,22 -94,18 -91,19 -90,21 -87,21 -88,18 -92,15 -96,16 -105,20 -106,23 -112,29", "Greenland": "-45,60 -52,65 -55,70 -60,76 -70,80 -30,83 -20,80 -20,72 -30,68 -40,64", "Cuba": "-85,22 -80,23 -74,20 -78,20", "Dominican Rep.": "-72,19.5 -69,19.5 -68,18 -71,18", "Guatemala": "-92,17 -89,18 -88,16 -89,14 -92,14.5", "Honduras": "-89,14 -88,16 -83,16 -83,14 -87,13", "Nicaragua": "-87,13 -83,14 -83,11 -86,11", "Costa Rica": "-86,11 -83,11 -82,9 -85,9", "Panama": "-85,9 -82,9 -77,8 -78,7 -82,8", "Colombia": "-77,8 -72,12 -67,6 -67,2 -70,-4 -75,-1 -79,1 -78,7", "Venezuela": "-72,12 -64,11 -60,8 -60,5 -64,2 -67,2 -67,6", "Guyana": "-60,8 -57,6 -56,2 -59,2 -60,5", "Suriname": "-57,6 -54,5 -54,2 -56,2", "Ecuador": "-80,1 -79,1 -75,-1 -75,-4 -80,-4 -81,-1", "Peru": "-81,-4 -75,-4 -70,-4 -69,-11 -69,-17 -71,-18 -76,-14 -81,-6", "Brazil": "-70,-4 -67,2 -64,2 -60,5 -54,5 -50,2 -48,-1 -35,-5 -35,-9 -39,-18 -41,-22 -48,-26 -53,-33 -57,-30 -54,-27 -56,-23 -58,-20 -58,-16 -65,-10 -69,-11", "Bolivia": "-69,-11 -65,-10 -58,-16 -58,-20 -62,-22 -67,-22 -69,-17", "Paraguay": "-58,-20 -55,-24 -54,-26 -58,-27 -62,-24 -62,-22", "Chile": "-70,-18 -68,-22 -69,-30 -70,-40 -72,-50 -74,-52 -69,-55 -69,-52 -72,-46 -73,-37 -71,-30 -70,-22", "Argentina": "-68,-22 -62,-22 -62,-24 -58,-27 -54,-27 -58,-34 -57,-38 -63,-41 -65,-45 -68,-50 -69,-55 -69,-52 -72,-50 -70,-40 -69,-30", "Uruguay": "-58,-30 -54,-33 -56,-35 -58,-34", "Iceland": "-24,64 -14,64 -14,66 -22,66", "United Kingdom": "-5,50 1,51 2,53 -2,57 -5,59 -6,56 -3,54 -5,52", "Ireland": "-10,52 -6,52 -6,55 -10,54", "Norway": "5,59 8,58 11,59 12,62 18,68 28,71 20,69 14,66 8,63 5,62", "Sweden": "11,59 13,56 16,56 19,60 21,64 24,66 20,69 18,68 12,62", "Finland": "22,60 30,60 31,63 29,70 24,68 24,65", "France": "-4,48 -1,46 -2,43 3,42 7,43 8,47 4,50 2,51 -1,49", "Spain": "-9,43 -2,43 3,42 0,38 -2,36 -6,36 -9,37", "Portugal": "-9,37 -9,42 -7,42 -7,38", "Germany": "6,51 7,54 14,54 15,51 13,48 8,47 6,49", "Italy": "7,44 13,47 13,45 17,41 16,38 12,41 9,44", "Poland": "14,54 19,55 24,54 24,50 19,49 15,51", "Ukraine": "24,50 24,52 32,52 40,50 38,47 33,45 30,46 26,48", "Belarus": "24,52 24,55 30,56 32,53 30,51", "Romania": "21,46 26,48 30,46 29,44 23,44", "Bulgaria": "23,44 29,44 28,42 23,42", "Hungary": "16,47 22,48 21,46 17,46", "Greece": "20,40 23,41 26,41 24,37 22,37", "Turkey": "26,42 33,42 41,41 44,40 44,37 36,36 29,36 26,38", "Russia": "30,60 28,70 40,67 60,69 70,73 100,77 140,72 180,69 180,65 160,60 143,59 140,53 135,43 131,43 130,48 120,53 110,50 90,50 80,51 60,52 48,46 48,42 40,43 38,47 40,50 32,52 31,56 28,57", "Kazakhstan": "48,46 60,52 80,51 87,49 80,43 70,41 56,41 53,45", "Turkmenistan": "53,40 56,41 60,38 62,36 54,37", "Uzbekistan": "56,41 70,41 66,38 60,38", "Iran": "44,40 48,38 54,37 61,36 61,26 56,26 50,30 46,33 44,37", "Iraq": "39,37 44,37 46,33 48,30 43,30 39,32", "Syria": "36,36 42,37 39,32 36,33", "Jordan": "36,33 39,32 37,29 35,30", "Saudi Arabia": "36,29 39,32 43,30 48,30 50,26 56,24 52,17 43,17 39,21", "Yemen": "43,17 52,17 46,13 43,13", "Oman": "56,24 60,22 57,18 52,17", "Afghanistan": "61,36 66,38 71,37 75,36 70,31 66,30 62,30", "Pakistan": "61,26 62,30 66,30 70,31 75,36 76,32 71,27 68,24", "India": "68,24 71,27 76,32 79,35 88,28 92,27 89,22 80,15 77,8 73,16 72,21", "Nepal": "80,29 88,26.5 88,28 81,30", "Bangladesh": "88,22 92,22 92,26 89,26", "Sri Lanka": "80,6 82,7 81,9 80,9", "China": "74,39 80,43 87,49 95,45 110,43 117,47 120,53 135,48 131,43 124,40 121,37 122,31 118,24 110,21 106,22 99,22 97,28 88,28 79,35", "Mongolia": "88,49 99,52 115,50 117,47 110,43 95,45", "Japan": "130,32 135,35 140,41 142,45 145,43 141,38 140,35 133,34", "South Korea": "126,35 129,35 129,38 127,38", "North Korea": "125,38 127,38 129,38 130,42 125,40", "Myanmar": "92,27 98,28 100,22 98,16 97,10 94,17", "Thailand": "98,16 100,22 105,18 102,13 100,7 98,10", "Vietnam": "102,22 106,23 108,16 109,12 105,9 105,18", "Malaysia": "100,6 104,2 103,1 101,3", "Indonesia": "95,5 98,4 105,-5 102,-4|106,-6 114,-7 114,-9 106,-8|109,1 117,7 119,1 116,-4 110,-3|119,0 125,1 122,-5|131,-1 141,-3 141,-9 137,-8", "Philippines": "120,18 122,18 126,7 122,7 120,14", "Papua New Guinea": "141,-3 147,-6 150,-10 141,-9", "Australia": "114,-22 122,-17 130,-12 136,-12 142,-11 146,-19 153,-26 150,-37 141,-38 134,-33 129,-32 115,-34", "New Zealand": "172,-35 178,-38 175,-41 172,-44 168,-46 167,-45 172,-41", "Morocco": "-13,28 -9,32 -6,35 -2,35 -2,32 -8,28", "Algeria": "-8,28 -2,32 -2,35 8,37 10,33 9,30 12,24 4,19 -5,25", "Tunisia": "8,37 11,37 11,33 10,33", "Libya": "10,33 11,33 20,32 25,32 25,20 15,23 12,24 9,30", "Egypt": "25,32 31,31 34,29 33,25 36,22 25,22", "Sudan": "25,22 36,22 37,18 36,14 34,9 27,10 24,12 22,15 24,20", "South Sudan": "24,12 27,10 34,9 35,5 30,4 25,5", "Ethiopia": "34,9 36,14 43,12 48,8 42,4 36,4 35,5", "Somalia": "43,12 51,12 51,10 48,5 41,-1 42,4 48,8", "Kenya": "36,4 42,4 41,-1 39,-4 34,-1 34,4", "Uganda": "30,4 34,4 34,-1 30,-1", "Tanzania": "30,-1 34,-1 39,-4 40,-10 35,-11 30,-8", "DR Congo": "16,-6 18,3 25,5 30,4 30,-1 30,-8 28,-12 22,-13 22,-8", "Congo": "11,-4 12,2 16,3 18,2 16,-5 14,-5", "Cameroon": "9,4 14,12 15,8 16,3 12,2", "Gabon": "9,1 12,2 12,-4 9,-1", "Nigeria": "3,6 3,12 8,13 14,13 14,8 9,4", "Niger": "3,12 4,19 12,23 15,20 14,13 8,13", "Chad": "14,13 15,20 15,23 24,20 24,12 22,10 16,8", "Mali": "-12,15 -5,25 4,19 3,12 -5,10 -11,12", "Mauritania": "-17,21 -13,28 -8,28 -5,25 -12,15 -17,16", "Senegal": "-17,15 -12,15 -12,12 -16,12", "Ivory Coast": "-8,5 -3,5 -3,10 -8,10", "Ghana": "-3,5 1,6 1,11 -3,11", "Burkina Faso": "-5,10 -3,11 3,12 1,14 -5,14", "Angola": "12,-6 13,-17 21,-18 22,-13 22,-8 16,-6", "Zambia": "22,-13 28,-12 33,-9 33,-14 25,-18 22,-18", "Mozambique": "33,-10 40,-10 41,-15 35,-24 32,-26 32,-18 33,-14", "Zimbabwe": "25,-18 33,-17 32,-22 27,-22", "Namibia": "12,-17 21,-18 20,-25 20,-29 17,-29 14,-22", "Botswana": "21,-18 25,-18 27,-23 22,-26 20,-24", "South Africa": "17,-29 20,-29 22,-26 27,-23 32,-26 32,-29 27,-34 20,-35 18,-33", "Madagascar": "44,-17 49,-12 50,-16 47,-25 44,-24", "Netherlands": "3.5,51.5 6,51 7,53.5 4.5,53", "Belgium": "2.5,51 6,50 6,51 4,51.5", "Denmark": "8,55 10,57.5 12,56 10,54.8", "Austria": "10,47 13,47.6 17,48 16,46.5 12,46.5", "Czechia": "12,50 15,51 19,49.5 17,48.5 13,49", "Slovakia": "17,48.5 22,49 21,48 18,47.8", "Switzerland": "6,46 8,47.6 10,47 9,46", "Serbia": "19,46 22,45 22.5,43 20,42.5 19,44", "Croatia": "13.5,45.5 16,46.5 19,45.5 17,43.5 15,44", "Bosnia": "16,45 19,45 19,43.5 17,43.5", "Albania": "19.5,42 20.5,41 20,40 19.3,40.5", "Lithuania": "21,56 26,56 26,54 23,54", "Latvia": "21,57 28,57.5 27,56 21,56.5", "Estonia": "23,58.5 28,59.5 28,57.5 24,57.5", "Moldova": "27,48 30,48.5 30,46.5 28,46.5", "Georgia": "41,43 46,42 45,41 41,41.5", "Armenia": "43.5,41 46,41 46,39 44,39", "Azerbaijan": "46,42 49,41 49,38.5 46,39", "Israel": "34.3,31.5 35.5,33 35.7,31 34.5,29.5", "Kuwait": "46.5,30 48.4,30 48,28.5 47,28.5", "UAE": "51.5,24.2 56,26 56.5,24 52,22.8", "Tajikistan": "67,39 74,39 74,37 70,37", "Kyrgyzstan": "70,42 80,43 77,40 72,39.5", "Laos": "100,22 105,21 107,18 104,14 102,17", "Cambodia": "102,14 105,14.5 107,12 104,10.5 102.5,12", "Taiwan": "120,25 122,25 121,22 120,23", "Guinea": "-14,12.5 -11,12.5 -8,10 -9,8 -13,9.5", "Sierra Leone": "-13,9 -10.5,9.5 -10.5,7 -12.5,7", "Liberia": "-11.5,7 -8.5,7.5 -8,4.5 -11,6", "Benin": "1.7,6.3 3.5,6.3 3,12 1,10", "Togo": "0,6 1.7,6 1.2,11 0,10", "Central African Rep.": "15,8 16,3 25,5 24,10 19,10", "Eritrea": "36,14 38,18 43,13 40,14", "Malawi": "33,-9.5 35,-10 35,-15 33.5,-14", "Haiti": "-74.5,19.8 -72.5,19.8 -72,18.5 -74.5,18.2", "Jamaica": "-78.4,18.4 -76.2,18.2 -77,17.8"};
-
-  const C = [];
-  let cidCounter = 0;
-  for (const nm in DATA) {
-    const path = new Path2D();
-    let best = null, ba = -1, tot = 0;
-    for (const ps of DATA[nm].split('|')) {
-      let r = ps.trim().split(/\s+/).map(q => {
-        const a = q.split(',');
-        return [(+a[0] + 180) * S, (90 - a[1]) * S];
-      });
-      r = sm(r);
-      path.moveTo(r[0][0], r[0][1]);
-      let a = 0, x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
-      for (let i = 0; i < r.length; i++) {
-        const p = r[i], q = r[(i + 1) % r.length];
-        if (i) path.lineTo(p[0], p[1]);
-        a += p[0] * q[1] - q[0] * p[1];
-        x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]);
-        y0 = Math.min(y0, p[1]); y1 = Math.max(y1, p[1]);
-      }
-      path.closePath();
-      a = Math.abs(a) / 2;
-      tot += a;
-      if (a > ba) { ba = a; best = [(x0 + x1) / 2, (y0 + y1) / 2]; }
-    }
-    C.push({
-      id: cidCounter++,
-      name: nm,
-      path,
-      x: best[0],
-      y: best[1],
-      area: tot,
-      sz: Math.sqrt(tot),
-      af: Math.min(1.6, Math.max(.25, Math.sqrt(tot) / 120)),
-      owner: -1,
-      troops: 0,
-      netRate: 0
-    });
+ });
+ peer.on('error',e=>{
+  if(e.type==='unavailable-id'){
+   const msg='"'+code+'" kodu şu an aktif! Karşı taraf bu kodu kurduysa "Bu Koda Katıl" butonuna basmalısın.';
+   $('net').textContent=msg;
+   toast(msg);
+  }else{
+   $('net').textContent='Bağlantı hatası: '+e.type;
+   toast('Bağlantı hatası: '+e.type);
   }
-  C.sort((a, b) => b.area - a.area);
-  const byName = {};
-  C.forEach(c => byName[c.name] = c);
-
-  /* =========================================================================
-   * 2. FACTIONS, UPGRADES & STATE
-   * ========================================================================= */
-  const PAL = [
-    { n: 'Sen', c: '#4fd1ff' },
-    { n: 'Kızıl Pakt', c: '#ff5d73' },
-    { n: 'Altın Birlik', c: '#ffb84d' },
-    { n: 'Mor Hanedan', c: '#a78bfa' },
-    { n: 'Yeşil Konfederasyon', c: '#4ade80' }
-  ];
-  const col = o => o < 0 ? '#8d9bb0' : PAL[o % PAL.length].c;
-  const $ = id => document.getElementById(id);
-  const cv = $('c'), ctx = cv.getContext('2d', { alpha: true });
-
-  let D = 1, W = 0, H = 0, v = { k: 1, x: 0, y: 0 }, fitK = 1;
-  let mode = 'pick', speed = 1, picked = null, hover = null;
-  let armies = [], links = [];
-  let mySlot = 0; // 0 in singleplayer, 0..4 in online multiplayer
-  let fGold = [0, 0, 0, 0, 0];
-  let fLv = Array.from({ length: 5 }, () => ({ g: 0, cap: 0, spd: 0, inc: 0, fl: 0, ln: 0 }));
-  let sel = new Set(), aiT = 0, chkT = 0, hudT = 0, syncT = 0, mouse = { x: 0, y: 0 };
-  let boxMode = false, cutMode = false;
-
-  // Ultra-HD Supersampled Canvas Resolution for Razor-Sharp Vector Borders & Text
-  function resize() {
-    D = Math.max(2.25, Math.min(3.0, (window.devicePixelRatio || 1) * 1.5));
-    W = innerWidth; H = innerHeight;
-    cv.width = Math.round(W * D);
-    cv.height = Math.round(H * D);
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    fitK = Math.max(W / 2000, H / 860);
-    if (!v.set) {
-      v.k = fitK;
-      v.x = 0;
-      v.y = H / 2 - 430 * v.k;
-      v.set = 1;
-    }
-  }
-  addEventListener('resize', resize);
-  resize();
-
-  /* =========================================================================
-   * 3. PRODUCTION, SUPPLY CHAIN & GOLD FORMULAS (Requirements #1, #4, #8)
-   * ========================================================================= */
-  // Base production is strictly uniform (1.0 troop/sec = 10 troops per 10s)
-  // Every upgrade to 'g' increases all owned regions' production capacity.
-  // When a region is captured, it automatically uses the new owner's upgrades!
-  const BASE_PROD = 1.0; // 10 troops in 10 seconds
-  const mult = o => o < 0 ? 0.08 : (1 + 0.30 * fLv[o].g);
-  const capM = o => o < 0 ? 0.35 : (1 + 0.25 * fLv[o].cap);
-  const spdM = o => o < 0 ? 1 : (1 + 0.25 * fLv[o].spd);
-  const flowM = o => o < 0 ? 1 : (1 + 0.25 * fLv[o].fl);
-  const maxL = o => 2 + (o >= 0 ? fLv[o].ln : 0);
-  const capOf = c => c.owner < 0 ? 25 : 100 * capM(c.owner);
-
-  // Gold rate: 2 gold/s for 1 country, 4 gold/s for 2 countries, 6 gold/s for 3 countries...
-  const goldRateOf = (o, count) => count * 2.0 * (1 + 0.35 * fLv[o].inc);
-
-  // Calculate how country `c` splits its production `P` between itself and its outgoing links:
-  // - 0 links: keeps 100% of P (+10 in 10s at base)
-  // - 1 link: sends 50% of P (+5 in 10s at base) down the link, keeps 50% (+5 in 10s) in `c`
-  // - 2+ links: at base level sends 100% of P split equally across links (kept = 0, so `c` NEVER loses troops!).
-  //   When Production (`g`) or Flow (`fl`) is upgraded, `c` reserves a growing share for itself AND sends more down every link!
-  function getCountryFlowSplit(c) {
-    if (c.owner < 0) return { keptRate: 0, perLinkRate: 0, outCount: 0 };
-    const o = c.owner;
-    const P = BASE_PROD * mult(o);
-    const outLinks = links.filter(L => L.s === c && L.o === o);
-    const k = outLinks.length;
-    if (k === 0) return { keptRate: P, perLinkRate: 0, outCount: 0 };
-
-    // Bonus reserve when player has upgraded production speed `g`
-    const upgradeReserveRatio = fLv[o].g > 0 ? Math.min(0.45, 0.12 * fLv[o].g) : 0;
-
-    if (k === 1) {
-      // Exact 50% split at base level (e.g. 10 produced -> 5 kept, 5 sent).
-      // Flow upgrade slightly boosts transfer speed without ever making keptRate negative.
-      const share = Math.min(0.85, 0.50 * (1 + 0.10 * fLv[o].fl) * (1 - upgradeReserveRatio * 0.4));
-      const outTotal = P * share;
-      return { keptRate: P - outTotal, perLinkRate: outTotal, outCount: 1 };
-    } else {
-      // k >= 2: At base level (g=0), 100% of production is shared across links so country troops stay constant (never decrease!).
-      // When g > 0, country also keeps `upgradeReserveRatio * P` so it grows while feeding multiple links!
-      const outTotal = P * (1 - upgradeReserveRatio);
-      return { keptRate: P - outTotal, perLinkRate: outTotal / k, outCount: k };
-    }
-  }
-
-  /* =========================================================================
-   * 4. DIRECTIONAL BEZIER CURVES & ARMY ARRIVAL (NO MID-ROAD COLLISIONS)
-   * ========================================================================= */
-  function scr(c) { return [c.x * v.k + v.x, c.y * v.k + v.y]; }
-  function cp(x0, y0, x1, y1) { return [(x0 + x1) / 2 - (y1 - y0) * .18, (y0 + y1) / 2 + (x1 - x0) * .18]; }
-  function bz(p, x0, y0, cx, cy, x1, y1) {
-    const u = 1 - p;
-    return [
-      u * u * x0 + 2 * u * p * cx + p * p * x1,
-      u * u * y0 + 2 * u * p * cy + p * p * y1
-    ];
-  }
-
-  function spawnArmyUnit(s, t, o, n, isLinkUnit, cl) {
-    const dist = Math.hypot(t.x - s.x, t.y - s.y);
-    const dur = Math.max(0.35, dist / (110 * spdM(o) * (isLinkUnit ? flowM(o) : 1)));
-    armies.push({
-      s, t, o, n,
-      cl: cl || col(o),
-      p: 0,
-      dur,
-      lk: isLinkUnit ? 1 : 0
-    });
-  }
-
-  // Shift+Drag single-wave 50% burst
-  function sendBurst(s, t, ownerSlot, cl) {
-    if (s.owner !== ownerSlot || s === t) return;
-    const n = Math.floor(s.troops * 0.5);
-    if (n < 1) return;
-    s.troops -= n;
-    const dist = Math.hypot(t.x - s.x, t.y - s.y);
-    const dur = Math.max(0.35, dist / (110 * spdM(ownerSlot)));
-    armies.push({
-      s, t, o: ownerSlot, n,
-      cl: cl || col(ownerSlot),
-      p: 0,
-      dur,
-      lk: 0
-    });
-  }
-
-  function arrive(a) {
-    const t = a.t;
-    if (t.owner === a.o) {
-      if (t.troops < capOf(t)) {
-        t.troops = Math.min(capOf(t), t.troops + a.n);
-      }
-    } else {
-      t.troops -= a.n;
-      if (t.troops < 0) {
-        t.owner = a.o;
-        t.troops = -t.troops;
-        // Remove any outgoing links that belonged to the previous owner
-        for (let i = links.length - 1; i >= 0; i--) {
-          if (links[i].s === t && links[i].o !== t.owner) {
-            links.splice(i, 1);
-          }
-        }
-      }
-    }
-  }
-
-  /* =========================================================================
-   * 5. SMART & FAIR BOT AI METRIC (Requirement #10)
-   * ========================================================================= */
-  function aiStep() {
-    // Count how many hostile bot links are already targeting the human player (slot 0)
-    const botLinksAgainstPlayer = links.filter(L => L.o > 0 && !isSlotHuman(L.o) && L.t.owner === mySlot).length;
-
-    for (let f = 1; f <= 4; f++) {
-      if (isSlotHuman(f)) continue; // Controlled by an online human player
-      const own = C.filter(c => c.owner === f);
-      if (!own.length) continue;
-
-      // 1. Bots spend their accumulated gold on faction upgrades
-      const upOrder = ['g', 'fl', 'ln', 'spd', 'cap', 'inc'];
-      for (const uk of upOrder) {
-        const lvl = fLv[f][uk];
-        const cCost = cost(lvl);
-        if (lvl < 12 && fGold[f] >= cCost) {
-          fGold[f] -= cCost;
-          fLv[f][uk]++;
-          break;
-        }
-      }
-
-      // 2. Manage continuous links for each bot-owned country
-      for (const s of own) {
-        const sOut = links.filter(L => L.s === s && L.o === f);
-        const sIncomingHostile = links.some(L => L.t === s && L.o !== f);
-
-        // If under heavy attack and low on garrison, cut outgoing attack links to focus on defense
-        if (sIncomingHostile && s.troops < 12 && sOut.length > 0) {
-          for (let i = links.length - 1; i >= 0; i--) {
-            if (links[i].s === s && links[i].t.owner !== f) links.splice(i, 1);
-          }
-          continue;
-        }
-
-        // Remove links to friendly countries that are already near capacity
-        for (let i = links.length - 1; i >= 0; i--) {
-          const L = links[i];
-          if (L.s === s && L.t.owner === f && L.t.troops > capOf(L.t) * 0.85) {
-            links.splice(i, 1);
-          }
-        }
-
-        if (sOut.length >= maxL(f) || s.troops < 14) continue;
-
-        // Evaluate candidate neighbors using a fair strategic metric
-        let bestTarget = null;
-        let bestScore = 1e9;
-
-        for (const t of C) {
-          if (t === s) continue;
-          if (links.some(L => L.s === s && L.t === t)) continue;
-          const dist = Math.hypot(t.x - s.x, t.y - s.y);
-          if (dist > 310) continue; // Only connect within regional neighborhood
-
-          // Case A: Reinforce a friendly frontline country that is fighting
-          if (t.owner === f) {
-            const tFighting = links.some(L => (L.s === t && L.t.owner !== f) || (L.t === t && L.o !== f));
-            if (tFighting && s.troops > 30 && t.troops < capOf(t) * 0.6) {
-              const reinforceScore = dist * 0.7 + t.troops * 0.5;
-              if (reinforceScore < bestScore) {
-                bestScore = reinforceScore;
-                bestTarget = t;
-              }
-            }
-            continue;
-          }
-
-          // Case B: Attack Neutral or Rival Faction
-          // Require reasonable troop ratio so bots don't suicidally attack huge garrisons
-          if (t.troops > s.troops * 1.15 + 8) continue;
-
-          let score = dist * 0.65 + t.troops * 1.4;
-
-          // Strong preference for unclaimed Neutral countries first
-          if (t.owner < 0) {
-            score -= 55;
-          } else if (t.owner === mySlot) {
-            // ANTI-DOGPILE METRIC:
-            // Do NOT gang up on the player! If bots already have links on the player
-            // or if neutral/other-bot targets exist, heavily penalize targeting the player.
-            score += 65 + botLinksAgainstPlayer * 85;
-          } else {
-            // Rival bot faction
-            score -= 10;
-          }
-
-          if (score < bestScore) {
-            bestScore = score;
-            bestTarget = t;
-          }
-        }
-
-        if (bestTarget) {
-          createSingleLink(s, bestTarget, f);
-        }
-      }
-    }
-  }
-
-  /* =========================================================================
-   * 6. MAIN SIMULATION UPDATE LOOP
-   * ========================================================================= */
-  function update(dt) {
-    dt *= speed;
-    if (!dt) return;
-
-    // 1. Count owned countries per faction & accumulate Gold (Requirement #8: +2/s per country)
-    const ownCounts = [0, 0, 0, 0, 0];
-    for (const c of C) {
-      if (c.owner >= 0) ownCounts[c.owner]++;
-      c.netRate = 0;
-    }
-    for (let f = 0; f < 5; f++) {
-      if (ownCounts[f] > 0) {
-        fGold[f] += goldRateOf(f, ownCounts[f]) * dt;
-      }
-    }
-
-    // 2. Clean up invalid links
-    for (let i = links.length - 1; i >= 0; i--) {
-      const L = links[i];
-      if (L.s.owner !== L.o) {
-        links.splice(i, 1);
-      }
-    }
-
-    // 3. Regional Production & Continuous Link Outflow (Requirements #1, #2, #4)
-    for (const c of C) {
-      if (c.owner < 0) {
-        // Neutral garrison slow regeneration up to neutral cap
-        const nCap = capOf(c);
-        if (c.troops < nCap) c.troops = Math.min(nCap, c.troops + 0.10 * dt);
-        continue;
-      }
-
-      const split = getCountryFlowSplit(c);
-      c.netRate = split.keptRate;
-
-      // Add retained production directly to country garrison (never decreases!)
-      const cCap = capOf(c);
-      if (c.troops < cCap) {
-        c.troops = Math.min(cCap, c.troops + split.keptRate * dt);
-      }
-    }
-
-    // 4. Spawn continuous 1-troop marching soldiers along active links
-    for (let i = links.length - 1; i >= 0; i--) {
-      const L = links[i];
-      const s = L.s, t = L.t;
-      const split = getCountryFlowSplit(s);
-      const rate = split.perLinkRate;
-
-      // Update netRate telemetry for tooltip display
-      if (t.owner === s.owner) t.netRate += rate;
-      else t.netRate -= rate;
-
-      L.acc += rate * dt;
-      while (L.acc >= 1.0) {
-        L.acc -= 1.0;
-        spawnArmyUnit(s, t, L.o, 1.0, true, lcl(L));
-      }
-    }
-
-    // 5. Advance Marching Soldiers directly to target country (no mid-road collisions)
-    for (let i = armies.length - 1; i >= 0; i--) {
-      const a = armies[i];
-      a.p += dt / a.dur;
-      if (a.p >= 1) {
-        arrive(a);
-        armies.splice(i, 1);
-      }
-    }
-
-    sel.forEach(c => { if (c.owner !== mySlot) sel.delete(c); });
-
-    // 6. AI step (only Host or Singleplayer runs AI decisions)
-    if (!netState.active || netState.isHost) {
-      aiT += dt;
-      if (aiT > 1.6) {
-        aiT = 0;
-        aiStep();
-      }
-      // 5 Hz Authoritative State Sync from Host to all Clients
-      if (netState.active && netState.isHost) {
-        syncT += dt;
-        if (syncT >= 0.2) {
-          syncT = 0;
-          broadcastGameState();
-        }
-      }
-    }
-
-    // 7. Victory / Defeat Check
-    chkT += dt;
-    if (chkT > 1) {
-      chkT = 0;
-      const mine = C.filter(c => c.owner === mySlot).length;
-      const enemies = C.filter(c => c.owner >= 0 && c.owner !== mySlot).length;
-      if (!mine && !armies.some(a => a.o === mySlot)) finish(false);
-      else if (enemies === 0 && mine > 0 && !armies.some(a => a.o !== mySlot)) finish(true);
-    }
-  }
-
-  function finish(w) {
-    mode = 'over';
-    $('et').textContent = w ? 'Dünya Senin! 🏆' : 'Yenildin';
-    $('ep').textContent = w ? 'Tüm ülkeleri fethettin.' : 'Bütün topraklarını kaybettin.';
-    $('end').hidden = false;
-  }
-
-  /* =========================================================================
-   * 7. RENDERING ENGINE (Original Crisp Aesthetics from map..html)
-   * ========================================================================= */
-  function draw() {
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, cv.width, cv.height);
-    ctx.setTransform(D * v.k, 0, 0, D * v.k, D * v.x, D * v.y);
-
-    // Subtle Lat/Lon Grid
-    ctx.strokeStyle = 'rgba(255,255,255,.05)';
-    ctx.lineWidth = 1 / v.k;
-    ctx.beginPath();
-    for (let i = 0; i <= 36; i++) { ctx.moveTo(i * 2000 / 36, 0); ctx.lineTo(i * 2000 / 36, 1000); }
-    for (let i = 0; i <= 18; i++) { ctx.moveTo(0, i * 1000 / 18); ctx.lineTo(2000, i * 1000 / 18); }
-    ctx.stroke();
-
-    // Country Polygons (Exact style & glow from map..html)
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-    for (const c of C) {
-      const isSel = sel.has(c) || c === picked || (dg && dg.grp.has(c));
-      let o = c.owner;
-      if (mode === 'pick') {
-        const lobbyOwner = getLobbyCountryOwner(c.name);
-        if (lobbyOwner !== null) o = lobbyOwner;
-        else if (c === picked) o = mySlot;
-      }
-      const cl = col(o);
-      ctx.globalAlpha = (c === hover ? .8 : .5) + (isSel ? .15 : 0);
-      ctx.fillStyle = cl;
-      ctx.fill(c.path);
-      ctx.globalAlpha = 1;
-      ctx.strokeStyle = isSel ? '#fff' : 'rgba(255,255,255,.3)';
-      ctx.lineWidth = (isSel ? 2.4 : .8) / v.k;
-      if (isSel) { ctx.shadowColor = cl; ctx.shadowBlur = 22; }
-      ctx.stroke(c.path);
-      ctx.shadowBlur = 0;
-    }
-
-    // Screen-Space Overlays (Links, Armies, Labels)
-    ctx.setTransform(D, 0, 0, D, 0, 0);
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    drawLinks();
-    drawArmies();
-    if (dg) drawDrag();
-    if (bx) drawBox();
-
-    if (mode === 'pick') return;
-
-    for (const c of C) {
-      const sx = c.x * v.k + v.x, sy = c.y * v.k + v.y;
-      if (sx < -50 || sy < -50 || sx > W + 50 || sy > H + 50) continue;
-      const s = c.sz * v.k;
-      if (s > 16) {
-        ctx.fillStyle = '#fff';
-        ctx.shadowColor = 'rgba(0,0,0,.7)';
-        ctx.shadowBlur = 4;
-        ctx.font = '700 ' + Math.round(11 + Math.min(9, s / 14)) + 'px system-ui';
-        ctx.fillText(Math.floor(c.troops), sx, sy);
-        if (s > 70) {
-          ctx.font = '500 10px system-ui';
-          ctx.fillStyle = 'rgba(255,255,255,.65)';
-          ctx.fillText(c.name, sx, sy + 14 + Math.min(9, s / 14) / 2);
-        }
-        ctx.shadowBlur = 0;
-      } else {
-        ctx.fillStyle = col(c.owner);
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.arc(sx, sy, 3, 0, 7);
-        ctx.fill();
-        ctx.stroke();
-      }
-    }
-  }
-
-  function rc(r) {
-    const t = Math.min(1, Math.max(0, (Math.log2(Math.max(r, .01)) + 1) / 2));
-    const h = t < .5 ? 210 - t * 150 : 135 - (t - .5) * 270;
-    return 'hsl(' + h + ',95%,60%)';
-  }
-
-  function lcl(L) {
-    if (L.o !== mySlot) return col(L.o);
-    return L.t.owner === mySlot ? '#7ee7ff' : rc((L.s.troops * .5) / Math.max(1, L.t.troops));
-  }
-
-  function drawLinks() {
-    const T = performance.now() / 1000;
-    for (const L of links) {
-      // ONLY render the local player's own connection paths so the map stays clean
-      if (L.o !== mySlot || L.s.owner !== mySlot) continue;
-
-      const cl = lcl(L);
-      const [x0, y0] = scr(L.s), [x1, y1] = scr(L.t);
-      const [cx, cy] = cp(x0, y0, x1, y1);
-
-      ctx.strokeStyle = cl;
-      ctx.shadowColor = cl;
-      ctx.shadowBlur = 12;
-      ctx.lineWidth = 2.6;
-      ctx.lineCap = 'round';
-      ctx.globalAlpha = .9;
-      ctx.setLineDash([9, 8]);
-      ctx.lineDashOffset = -T * 30;
-      ctx.beginPath();
-      ctx.moveTo(x0, y0);
-      ctx.quadraticCurveTo(cx, cy, x1, y1);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.globalAlpha = 1;
-
-      const m0 = bz(.9, x0, y0, cx, cy, x1, y1), m1 = bz(.96, x0, y0, cx, cy, x1, y1);
-      const an = Math.atan2(m1[1] - m0[1], m1[0] - m0[0]);
-      ctx.fillStyle = cl;
-      ctx.beginPath();
-      ctx.moveTo(m1[0] + 9 * Math.cos(an), m1[1] + 9 * Math.sin(an));
-      ctx.lineTo(m1[0] - 7 * Math.cos(an - .9), m1[1] - 7 * Math.sin(an - .9));
-      ctx.lineTo(m1[0] - 7 * Math.cos(an + .9), m1[1] - 7 * Math.sin(an + .9));
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.arc(x0, y0, 6, 0, 7);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-
-      // Cut button '✕' on player's own links
-      const m = bz(.5, x0, y0, cx, cy, x1, y1);
-      L.mx = m[0]; L.my = m[1];
-      ctx.fillStyle = cutMode ? 'rgba(255, 42, 100, .92)' : 'rgba(8,14,30,.85)';
-      ctx.strokeStyle = cutMode ? '#fff' : cl;
-      ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      ctx.arc(m[0], m[1], cutMode ? 11 : 9, 0, 7);
-      ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = '#fff';
-      ctx.font = '700 10px system-ui';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('✕', m[0], m[1] + .5);
-    }
-  }
-
-  function drawArmies() {
-    for (const a of armies) {
-      const cl = a.cl || col(a.o);
-      const [x0, y0] = scr(a.s), [x1, y1] = scr(a.t);
-      const [cx, cy] = cp(x0, y0, x1, y1);
-      // Only draw faint trajectory curve for the local player's own burst waves
-      if (!a.lk && a.o === mySlot) {
-        ctx.strokeStyle = cl;
-        ctx.globalAlpha = .22;
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(x0, y0);
-        ctx.quadraticCurveTo(cx, cy, x1, y1);
-        ctx.stroke();
-        ctx.globalAlpha = 1;
-      }
-      ctx.shadowColor = cl;
-      ctx.shadowBlur = 14;
-      ctx.fillStyle = cl;
-      for (let j = 0; j < 8; j++) {
-        const p = a.p - j * .012;
-        if (p < 0) break;
-        const q = bz(p, x0, y0, cx, cy, x1, y1);
-        ctx.globalAlpha = 1 - j * .12;
-        ctx.beginPath();
-        ctx.arc(q[0], q[1], (a.lk ? 3.8 : 5.5) - j * .5, 0, 7);
-        ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-      ctx.shadowBlur = 0;
-      const h = bz(a.p, x0, y0, cx, cy, x1, y1);
-      ctx.fillStyle = '#fff';
-      ctx.font = '700 10px system-ui';
-      ctx.textAlign = 'center';
-      if (!a.lk) ctx.fillText(Math.floor(a.n), h[0], h[1] - 13);
-    }
-  }
-
-  function pill(txt, x, y, cl) {
-    ctx.font = '700 12px system-ui';
-    const w = ctx.measureText(txt).width + 18;
-    ctx.fillStyle = 'rgba(8,14,30,.78)';
-    ctx.strokeStyle = cl;
-    ctx.lineWidth = 1.2;
-    ctx.beginPath();
-    (ctx.roundRect || ctx.rect).call(ctx, x - w / 2, y - 12, w, 24, 12);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = '#fff';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(txt, x, y);
-  }
-
-  function drawDrag() {
-    const g = dg, tt = g.t, T = performance.now() / 1000;
-    let sum = 0;
-    g.grp.forEach(s => sum += Math.floor(s.troops * .5));
-    const hit = tt && !g.grp.has(tt) ? tt : null;
-    let r = null;
-    if (hit && hit.owner !== mySlot) r = sum / Math.max(1, hit.troops);
-    const cl = !hit ? '#cfe8ff' : hit.owner === mySlot ? '#7ee7ff' : rc(r);
-    const tp = hit ? scr(hit) : [mouse.x, mouse.y];
-
-    g.grp.forEach(s => {
-      const [x0, y0] = scr(s);
-      const [cx, cy] = cp(x0, y0, tp[0], tp[1]);
-      ctx.strokeStyle = cl;
-      ctx.shadowColor = cl;
-      ctx.shadowBlur = 16;
-      ctx.lineWidth = 3.5;
-      ctx.lineCap = 'round';
-      ctx.setLineDash([10, 9]);
-      ctx.lineDashOffset = -T * 40;
-      ctx.beginPath();
-      ctx.moveTo(x0, y0);
-      ctx.quadraticCurveTo(cx, cy, tp[0], tp[1]);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      const m = bz(.96, x0, y0, cx, cy, tp[0], tp[1]);
-      const an = Math.atan2(tp[1] - m[1], tp[0] - m[0]);
-      ctx.fillStyle = cl;
-      ctx.beginPath();
-      ctx.moveTo(tp[0], tp[1]);
-      ctx.lineTo(tp[0] - 17 * Math.cos(an - .4), tp[1] - 17 * Math.sin(an - .4));
-      ctx.lineTo(tp[0] - 17 * Math.cos(an + .4), tp[1] - 17 * Math.sin(an + .4));
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(x0, y0, 7, 0, 7);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-    });
-
-    if (hit) {
-      ctx.strokeStyle = cl;
-      ctx.lineWidth = 2.5;
-      ctx.shadowColor = cl;
-      ctx.shadowBlur = 14;
-      ctx.beginPath();
-      ctx.arc(tp[0], tp[1], 16 + 4 * Math.sin(T * 6), 0, 7);
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-      pill((g.burst ? 'Dalga · ' : 'Hat · ') + sum + ' → ' + Math.floor(hit.troops) + (r != null ? '   ×' + r.toFixed(2) : '  (aktarım)'), tp[0], tp[1] - 34, cl);
-    } else {
-      pill(sum + ' asker · ' + g.grp.size + ' ülke', mouse.x, mouse.y - 26, cl);
-    }
-  }
-
-  function drawBox() {
-    const x = Math.min(bx.x0, bx.x1), y = Math.min(bx.y0, bx.y1);
-    const w = Math.abs(bx.x1 - bx.x0), h = Math.abs(bx.y1 - bx.y0);
-    ctx.fillStyle = 'rgba(79,209,255,.12)';
-    ctx.strokeStyle = '#4fd1ff';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([6, 5]);
-    ctx.fillRect(x, y, w, h);
-    ctx.strokeRect(x, y, w, h);
-    ctx.setLineDash([]);
-  }
-
-  /* =========================================================================
-   * 8. LINK CREATION, CUTTING & MULTIPLAYER SYNC
-   * ========================================================================= */
-  function toast(m) {
-    const t = $('toast');
-    t.textContent = m;
-    t.hidden = false;
-    clearTimeout(toast.h);
-    toast.h = setTimeout(() => { t.hidden = true; }, 2800);
-  }
-
-  function createSingleLink(s, t, ownerSlot) {
-    if (!s || !t || s.owner !== ownerSlot || s === t) return false;
-    if (links.some(L => L.s === s && L.t === t && L.o === ownerSlot)) return false;
-
-    // If same owner had a reverse link t -> s, flip it cleanly
-    const rv = links.findIndex(L => L.s === t && L.t === s && L.o === ownerSlot);
-    if (rv >= 0) links.splice(rv, 1);
-
-    if (links.filter(L => L.s === s && L.o === ownerSlot).length >= maxL(ownerSlot)) {
-      return 'limit';
-    }
-    links.push({ s, t, o: ownerSlot, acc: 0.35 });
-    return true;
-  }
-
-  function linkGroup(grp, t, ownerSlot = mySlot, broadcast = true) {
-    let lim = 0;
-    const srcNames = [];
-    grp.forEach(s => {
-      const res = createSingleLink(s, t, ownerSlot);
-      if (res === 'limit') lim++;
-      else if (res === true) srcNames.push(s.name);
-    });
-    if (lim && ownerSlot === mySlot) {
-      toast('Hat limiti dolu (' + maxL(mySlot) + ' hat/ülke). "Hat Sayısı" yükseltmesini al ya da bir hattı kes.');
-    }
-    if (broadcast && srcNames.length && netState.active) {
-      netSend({ type: 'cmd_link', sNames: srcNames, tName: t.name, o: ownerSlot });
-    }
-  }
-
-  function attackGroup(grp, t, ownerSlot = mySlot, broadcast = true) {
-    let sum = 0;
-    grp.forEach(s => { if (s.owner === ownerSlot && s !== t) sum += Math.floor(s.troops * .5); });
-    if (sum < 1) return;
-    const cl = t.owner === ownerSlot ? '#7ee7ff' : rc(sum / Math.max(1, t.troops));
-    const srcNames = [];
-    grp.forEach(s => {
-      if (s.owner === ownerSlot && s !== t) {
-        sendBurst(s, t, ownerSlot, cl);
-        srcNames.push(s.name);
-      }
-    });
-    if (broadcast && srcNames.length && netState.active) {
-      netSend({ type: 'cmd_burst', sNames: srcNames, tName: t.name, o: ownerSlot });
-    }
-  }
-
-  function cutLink(L, broadcast = true) {
-    const i = links.indexOf(L);
-    if (i >= 0) {
-      const sName = L.s.name, tName = L.t.name, o = L.o;
-      links.splice(i, 1);
-      if (broadcast && netState.active) {
-        netSend({ type: 'cmd_cut', sName, tName, o });
-      }
-    }
-  }
-
-  function linkNear(x, y, ownerSlot = mySlot) {
-    let b = null, bd = 18;
-    for (const L of links) {
-      if (L.o !== ownerSlot || L.s.owner !== ownerSlot) continue;
-      const [x0, y0] = scr(L.s), [x1, y1] = scr(L.t);
-      const [cx, cy] = cp(x0, y0, x1, y1);
-      for (let i = 0; i <= 20; i++) {
-        const q = bz(i / 20, x0, y0, cx, cy, x1, y1);
-        const d = Math.hypot(q[0] - x, q[1] - y);
-        if (d < bd) { bd = d; b = L; }
-      }
-    }
-    return b;
-  }
-
-  function midHit(x, y) {
-    const hitR = innerWidth <= 768 ? 20 : 14;
-    return links.find(L => L.o === mySlot && L.s.owner === mySlot && Math.hypot((L.mx === undefined ? -9e9 : L.mx) - x, (L.my === undefined ? -9e9 : L.my) - y) < hitR);
-  }
-
-  function pick(sx, sy) {
-    const wx = (sx - v.x) / v.k, wy = (sy - v.y) / v.k;
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    for (let i = C.length - 1; i >= 0; i--) {
-      if (ctx.isPointInPath(C[i].path, wx, wy)) return C[i];
-    }
-    const tol = (innerWidth <= 768 ? 20 : 12) / v.k;
-    let b = null, bd = tol;
-    for (const c of C) {
-      const d = Math.hypot(c.x - wx, c.y - wy);
-      if (d < bd) { bd = d; b = c; }
-    }
-    return b;
-  }
-
-  function click(c) {
-    if (mode === 'pick') {
-      if (c) setPick(c);
-      return;
-    }
-    if (mode !== 'play') return;
-    if (!c) { sel.clear(); return; }
-    if (c.owner === mySlot) {
-      sel.has(c) ? sel.delete(c) : sel.add(c);
-    } else if (sel.size) {
-      linkGroup(sel, c, mySlot, true);
-    }
-  }
-
-  function boxSel(b) {
-    const x0 = Math.min(b.x0, b.x1), x1 = Math.max(b.x0, b.x1);
-    const y0 = Math.min(b.y0, b.y1), y1 = Math.max(b.y0, b.y1);
-    sel.clear();
-    for (const c of C) {
-      if (c.owner === mySlot) {
-        const q = scr(c);
-        if (q[0] >= x0 && q[0] <= x1 && q[1] >= y0 && q[1] <= y1) sel.add(c);
-      }
-    }
-  }
-
-  /* =========================================================================
-   * 9. POINTER & MULTI-TOUCH PINCH-ZOOM INTERACTION (Requirement #7)
-   * ========================================================================= */
-  let drag = null, dg = null, bx = null;
-  const activePointers = new Map();
-  let pinchDist = null, pinchMid = null;
-
-  cv.addEventListener('pointerdown', e => {
-    if (e.button === 2) return;
-    activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    cv.setPointerCapture(e.pointerId);
-
-    // 2-Finger Pinch-to-Zoom on Mobile
-    if (activePointers.size === 2) {
-      const pts = [...activePointers.values()];
-      pinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-      pinchMid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
-      drag = null; dg = null; bx = null;
-      return;
-    }
-
-    drag = { x: e.clientX, y: e.clientY, vx: v.x, vy: v.y, m: false, src: null, box: false };
-    if (mode === 'play') {
-      const mh = midHit(e.clientX, e.clientY);
-      if (mh) {
-        drag.cut = mh;
-        return;
-      }
-      if (cutMode) {
-        const nearL = linkNear(e.clientX, e.clientY, mySlot);
-        if (nearL) { cutLink(nearL, true); drag = null; return; }
-      }
-      const c = pick(e.clientX, e.clientY);
-      if (boxMode) drag.box = true;
-      else if (c && c.owner === mySlot) {
-        drag.src = c;
-        drag.burst = e.shiftKey;
-      } else if (e.shiftKey) {
-        drag.box = true;
-      }
-    }
-  });
-
-  cv.addEventListener('pointermove', e => {
-    mouse = { x: e.clientX, y: e.clientY };
-    if (activePointers.has(e.pointerId)) {
-      activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    }
-
-    // Handle 2-finger pinch zoom
-    if (activePointers.size === 2) {
-      const pts = [...activePointers.values()];
-      const nd = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-      const nMid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
-      if (pinchDist > 10) {
-        zoom(nd / pinchDist, nMid.x, nMid.y);
-      }
-      if (pinchMid) {
-        v.x += nMid.x - pinchMid.x;
-        v.y += nMid.y - pinchMid.y;
-      }
-      pinchDist = nd;
-      pinchMid = nMid;
-      return;
-    }
-
-    const c = pick(e.clientX, e.clientY);
-    if (drag) {
-      const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
-      if (!drag.m && Math.hypot(dx, dy) > 6) {
-        drag.m = true;
-        if (drag.src) {
-          dg = { grp: new Set(sel.has(drag.src) ? sel : [drag.src]), t: null, last: drag.src, burst: drag.burst };
-        }
-      }
-      if (drag.m) {
-        if (dg) {
-          if (c !== dg.last) {
-            if (dg.last && dg.last.owner === mySlot) dg.grp.add(dg.last);
-            dg.last = c;
-          }
-          dg.t = c;
-        } else if (drag.box) {
-          bx = { x0: drag.x, y0: drag.y, x1: e.clientX, y1: e.clientY };
-        } else {
-          v.x = drag.vx + dx;
-          v.y = drag.vy + dy;
-        }
-      }
-    }
-
-    hover = drag && drag.m ? null : c;
-    const t = $('tip');
-    if (hover && innerWidth > 768) {
-      t.style.display = 'block';
-      t.style.left = Math.min(e.clientX + 14, W - 200) + 'px';
-      t.style.top = (e.clientY + 14) + 'px';
-      const ownerLabel = hover.owner < 0 ? 'Tarafsız' : PAL[hover.owner].n;
-      const rateStr = mode === 'play' && hover.owner >= 0
-        ? ` · Net: <b>${(hover.netRate >= 0 ? '+' : '') + hover.netRate.toFixed(1)}/sn</b>`
-        : '';
-      t.innerHTML = `<b>${hover.name}</b><br>${ownerLabel}` + (mode === 'play' ? ` · ${Math.floor(hover.troops)} asker${rateStr}` : '');
-    } else {
-      t.style.display = 'none';
-    }
-  });
-
-  function endPointer(e) {
-    activePointers.delete(e.pointerId);
-    if (activePointers.size < 2) { pinchDist = null; pinchMid = null; }
-    if (!drag) return;
-    if (!drag.m) {
-      if (drag.cut) cutLink(drag.cut, true);
-      else click(pick(e.clientX, e.clientY));
-    } else if (dg) {
-      const t = dg.t;
-      if (t && !dg.grp.has(t)) {
-        dg.burst ? attackGroup(dg.grp, t, mySlot, true) : linkGroup(dg.grp, t, mySlot, true);
-        sel.clear();
-        dg.grp.forEach(c => sel.add(c));
-      }
-    } else if (bx) {
-      boxSel(bx);
-    }
-    drag = null; dg = null; bx = null;
-  }
-
-  cv.addEventListener('pointerup', endPointer);
-  cv.addEventListener('pointercancel', endPointer);
-  cv.addEventListener('pointerleave', () => { $('tip').style.display = 'none'; });
-
-  cv.addEventListener('contextmenu', e => {
-    e.preventDefault();
-    if (mode !== 'play') return;
-    const L = linkNear(e.clientX, e.clientY, mySlot);
-    if (L) { cutLink(L, true); return; }
-    const c = pick(e.clientX, e.clientY);
-    if (c && c.owner === mySlot) {
-      for (let i = links.length - 1; i >= 0; i--) {
-        if (links[i].s === c && links[i].o === mySlot) {
-          cutLink(links[i], true);
-        }
-      }
-    }
-  });
-
-  function zoom(f, mx, my) {
-    const nk = Math.min(40, Math.max(fitK * .75, v.k * f));
-    v.x = mx - (mx - v.x) * nk / v.k;
-    v.y = my - (my - v.y) * nk / v.k;
-    v.k = nk;
-  }
-  cv.addEventListener('wheel', e => {
-    e.preventDefault();
-    zoom(e.deltaY < 0 ? 1.2 : 1 / 1.2, e.clientX, e.clientY);
-  }, { passive: false });
-
-  /* =========================================================================
-   * 10. INSTANT BUTTON RESPONSIVENESS FIX (Requirement #9)
-   * ========================================================================= */
-  // Helper that triggers immediately on pointerdown so clicks NEVER get lost!
-  function bindInstantButton(el, fn) {
-    if (!el) return;
-    el.addEventListener('pointerdown', e => {
-      e.stopPropagation();
-      e.preventDefault();
-      if (el.disabled) return;
-      fn(e);
-    });
-  }
-
-  bindInstantButton($('zi'), () => zoom(1.4, W / 2, H / 2));
-  bindInstantButton($('zo'), () => zoom(1 / 1.4, W / 2, H / 2));
-
-  document.querySelectorAll('#ctl [data-s]').forEach(b => {
-    bindInstantButton(b, () => {
-      speed = +b.dataset.s;
-      document.querySelectorAll('#ctl [data-s]').forEach(x => x.classList.toggle('on', x === b));
-    });
-  });
-
-  bindInstantButton($('selAll'), () => C.forEach(c => c.owner === mySlot && sel.add(c)));
-  bindInstantButton($('clr'), () => sel.clear());
-  bindInstantButton($('cutall'), () => {
-    for (let i = links.length - 1; i >= 0; i--) {
-      if (links[i].o === mySlot) links.splice(i, 1);
-    }
-    if (netState.active) {
-      netSend({ type: 'cmd_cut_all', o: mySlot });
-    }
-  });
-  bindInstantButton($('boxb'), () => {
-    boxMode = !boxMode;
-    if (boxMode) { cutMode = false; $('cutModeBtn').classList.remove('on'); }
-    $('boxb').classList.toggle('on', boxMode);
-  });
-  bindInstantButton($('cutModeBtn'), () => {
-    cutMode = !cutMode;
-    if (cutMode) { boxMode = false; $('boxb').classList.remove('on'); toast('Hat Kesme Modu aktif: Kendi hatlarının üzerine dokunarak kesebilirsin.'); }
-    $('cutModeBtn').classList.toggle('on', cutMode);
-  });
-
-  addEventListener('keydown', e => {
-    if (mode !== 'play') return;
-    if (e.key === 'a' || e.key === 'A') C.forEach(c => c.owner === mySlot && sel.add(c));
-    if (e.key === 'Escape') { sel.clear(); boxMode = false; cutMode = false; $('boxb').classList.remove('on'); $('cutModeBtn').classList.remove('on'); }
-    if (e.key === ' ') { e.preventDefault(); speed = speed ? 0 : 1; }
-  });
-
-  const UP = [
-    { k: 'g',   n: 'Asker Hızı', d: '+30% üretim' },
-    { k: 'cap', n: 'Kapasite',   d: '+25% asker limiti' },
-    { k: 'spd', n: 'Ordu Hızı',  d: '+25% yürüyüş' },
-    { k: 'inc', n: 'Altın Hızı', d: '+35% altın geliri' },
-    { k: 'fl',  n: 'Akış Hızı',  d: '+25% hat akışı' },
-    { k: 'ln',  n: 'Hat Sayısı', d: '+1 hat / ülke' }
-  ];
-  const cost = l => Math.round(40 * Math.pow(1.65, l));
-
-  // Build upgrade buttons ONCE with static child spans so DOM nodes are never destroyed mid-click!
-  const upRefs = {};
-  UP.forEach(u => {
-    const b = document.createElement('button');
-    b.className = 'up';
-    b.id = 'u' + u.k;
-    const titleEl = document.createElement('b');
-    const descEl = document.createElement('small');
-    descEl.textContent = u.d;
-    const costEl = document.createElement('small');
-    costEl.className = 'cost-tag';
-    b.appendChild(titleEl);
-    b.appendChild(descEl);
-    b.appendChild(costEl);
-    $('ups').appendChild(b);
-    upRefs[u.k] = { btn: b, titleEl, costEl };
-
-    bindInstantButton(b, () => {
-      const curLv = fLv[mySlot][u.k];
-      const cCost = cost(curLv);
-      if (mode === 'play' && fGold[mySlot] >= cCost && curLv < 12) {
-        fGold[mySlot] -= cCost;
-        fLv[mySlot][u.k]++;
-        if (netState.active) {
-          netSend({ type: 'cmd_up', slot: mySlot, k: u.k, lv: fLv[mySlot][u.k] });
-        }
-        hud(); // Immediate visual update
-      }
-    });
-  });
-
-  function hud() {
-    let n = 0, t = 0, myLinks = 0;
-    for (const c of C) {
-      if (c.owner === mySlot) { n++; t += c.troops; }
-    }
-    for (const L of links) if (L.o === mySlot) myLinks++;
-
-    $('sC').textContent = n + ' / ' + C.length;
-    $('sT').textContent = Math.floor(t);
-    $('sL').textContent = myLinks;
-    const gRate = goldRateOf(mySlot, n);
-    $('sG').textContent = Math.floor(fGold[mySlot]) + ' (+' + gRate.toFixed(1) + '/sn)';
-
-    UP.forEach(u => {
-      const ref = upRefs[u.k];
-      const l = fLv[mySlot][u.k];
-      const cCost = cost(l);
-      const tText = u.n + ' · Sv.' + l;
-      const cText = l >= 12 ? 'MAKS' : '💰 ' + cCost;
-      if (ref.titleEl.textContent !== tText) ref.titleEl.textContent = tText;
-      if (ref.costEl.textContent !== cText) ref.costEl.textContent = cText;
-      const shouldDisable = mode !== 'play' || fGold[mySlot] < cCost || l >= 12;
-      if (ref.btn.disabled !== shouldDisable) ref.btn.disabled = shouldDisable;
-    });
-  }
-
-  /* =========================================================================
-   * 11. ONLINE MULTIPLAYER LOBBY & SYNC (Requirement #6 - GitHub Pages P2P)
-   * ========================================================================= */
-  const PEER_CONFIG = {
-    debug: 1,
-    config: {
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun2.l.google.com:19302' },
-        { urls: 'stun:stun3.l.google.com:19302' }
-      ]
-    }
+ });
+ peer.on('connection',cn=>{
+  let assignedSlot=-1;
+  const registerGuest=()=>{
+   if(assignedSlot>=0){
+    cn.send({t:'hi',slot:assignedSlot,code});
+    bcLobby();
+    return;
+   }
+   const k=slots.findIndex(s=>s.type==='none');
+   if(k<0||mode!=='lobby'){
+    cn.send({t:'full'});
+    setTimeout(()=>cn.close(),400);
+    return;
+   }
+   assignedSlot=k;
+   slots[k]={type:'human',name:'Oyuncu '+(k+1),pick:-1,ready:false,conn:cn};
+   cn.send({t:'hi',slot:k,code});
+   bcLobby();
+   toast('Oyuncu '+(k+1)+' odaya katıldı!');
   };
+  cn.on('open',registerGuest);
+  cn.on('data',d=>{
+   if(d&&d.t==='join_req'){registerGuest();return}
+   if(assignedSlot>=0)hostMsg(assignedSlot,d);
+  });
+  cn.on('close',()=>{if(assignedSlot>=0)drop(assignedSlot)});
+  cn.on('error',()=>{if(assignedSlot>=0)drop(assignedSlot)});
+  if(cn.open)registerGuest();
+ });
+}
 
-  const netState = {
-    isOnlineTab: false,
-    active: false,
-    isHost: false,
-    fillBots: true,
-    roomCode: '',
-    peer: null,
-    conns: [],
-    bc: null,
-    myId: 'p_' + Math.random().toString(36).slice(2, 9),
-    players: [] // [{ id, name, slot, country, ready, isBot }]
+function drop(k){if(!slots[k]||slots[k].type!=='human')return;
+ if(mode==='lobby'){slots[k]={type:'none',name:'',pick:-1,ready:false};bcLobby()}else{slots[k].type='bot';slots[k].conn=null;toast(slots[k].name+' ayrıldı, yerine bot geçti')}}
+function hostMsg(k,d){if(d.t==='pick'&&mode==='lobby'){if(!slots.some((s,i)=>i!==k&&s.type==='human'&&s.pick===d.c)){slots[k].pick=d.c;slots[k].ready=false}bcLobby()}
+ else if(d.t==='ready'&&mode==='lobby'){if(slots[k].pick>=0)slots[k].ready=!!d.v;bcLobby()}
+ else if(d.t==='cmd'&&mode==='play'){const r=exec(k,d.m);if(r&&slots[k].conn)slots[k].conn.send({t:'toast',m:r})}}
+
+/* Odaya katılma: Girilen kodu olduğu gibi kullanır ve bağlantı kurulana kadar el sıkışma isteği gönderir */
+function joinRoom(cd){
+ if(!window.Peer){$('net').textContent='Online mod için internet bağlantısı (PeerJS) gerekli.';return}
+ cd=cleanCode(cd);
+ if(!cd){$('net').textContent='Lütfen katılmak istediğiniz oda kodunu yazın.';return}
+ $('jcode').value=cd;
+ $('net').textContent='"'+cd+'" kodlu odaya bağlanılıyor…';
+ code=cd;
+ cleanupPeer();
+ peer=new Peer(PEER_CFG);
+ let joined=false;
+ const to=setTimeout(()=>{
+  if(!joined){
+   cleanupPeer();
+   $('net').textContent='"'+cd+'" kodlu odaya ulaşılamadı. Önce oda sahibinin "' + cd + '" koduyla "Bu Kodla Oda Kur" butonuna bastığından emin olun.';
+  }
+ },12000);
+ peer.on('open',()=>{
+  conn=peer.connect('wcq-room-'+cd,{reliable:true,serialization:'json'});
+  const sendHandshake=()=>{
+   if(joined){if(joinTimer){clearInterval(joinTimer);joinTimer=null}return}
+   if(conn&&conn.open)conn.send({t:'join_req'});
   };
-
-  function setP2PStatus(txt, pingTxt) {
-    const el = $('p2pStatus');
-    const pl = $('p2pPing');
-    if (el && txt) el.textContent = txt;
-    if (pl && pingTxt !== undefined) pl.textContent = pingTxt;
-  }
-
-  bindInstantButton($('fillBotsToggle'), () => {
-    if (netState.active && !netState.isHost) {
-      toast('Bu ayarı sadece oda kurucusu değiştirebilir.');
-      return;
-    }
-    netState.fillBots = !netState.fillBots;
-    $('fillBotsToggle').classList.toggle('on', netState.fillBots);
-    $('fillBotsToggle').textContent = netState.fillBots ? 'Açık ✓' : 'Kapalı ✕';
-    if (netState.active && netState.isHost) broadcastLobbyState();
+  conn.on('open',()=>{
+   sendHandshake();
+   joinTimer=setInterval(sendHandshake,700);
   });
-
-  function getLobbyCountryOwner(countryName) {
-    if (!netState.active) return null;
-    const p = netState.players.find(x => x.country === countryName);
-    return p ? p.slot : null;
-  }
-
-  function isSlotHuman(slot) {
-    if (!netState.active) return slot === 0;
-    return netState.players.some(p => p.slot === slot && !p.isBot);
-  }
-
-  function switchTab(online) {
-    netState.isOnlineTab = online;
-    $('tabSingle').classList.toggle('on', !online);
-    $('tabOnline').classList.toggle('on', online);
-    $('onlineBox').hidden = !online;
-    updateGoButtonState();
-  }
-  bindInstantButton($('tabSingle'), () => switchTab(false));
-  bindInstantButton($('tabOnline'), () => switchTab(true));
-
-  // Allow peeking at map to click a country directly on the canvas
-  bindInstantButton($('peekMapBtn'), () => {
-    $('start').hidden = true;
-    $('reopenModalBtn').hidden = false;
-    toast('Haritadan istediğin ülkeye dokunarak seç, ardından "Lobiye Dön" butonuna bas.');
+  conn.on('data',m=>{
+   if(m&&(m.t==='hi'||m.t==='lobby'||m.t==='full')){
+    joined=true;
+    clearTimeout(to);
+    if(joinTimer){clearInterval(joinTimer);joinTimer=null}
+    $('net').textContent='';
+   }
+   guestMsg(m);
   });
-  bindInstantButton($('reopenModalBtn'), () => {
-    $('reopenModalBtn').hidden = true;
-    $('start').hidden = false;
+  conn.on('close',()=>{
+   if(mode!=='over'&&joined){toast('Oda sahibi ile bağlantı koptu');setTimeout(()=>location.reload(),2500)}
   });
-
-  function generateRoomCode() {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let out = '';
-    for (let i = 0; i < 6; i++) out += chars[Math.floor(Math.random() * chars.length)];
-    return out;
+ });
+ peer.on('error',e=>{
+  clearTimeout(to);
+  if(joinTimer){clearInterval(joinTimer);joinTimer=null}
+  if(e.type==='peer-unavailable'){
+   $('net').textContent='"'+cd+'" kodlu açık bir oda bulunamadı! Oda sahibi henüz odayı kurmamış veya kodu farklı yazmış olabilir.';
+  }else{
+   $('net').textContent='Odaya bağlanılamadı ('+e.type+')';
   }
+ });
+}
 
-  function setupBroadcastChannel(code) {
-    if (netState.bc) netState.bc.close();
-    if ('BroadcastChannel' in window) {
-      netState.bc = new BroadcastChannel('wc_gh_room_' + code);
-      netState.bc.onmessage = ev => handleNetMessage(ev.data, null);
-    }
+function setSlots(p){slots=p.map(x=>({type:x.ty,name:x.name,pick:x.pick,ready:x.ready}))}
+function guestMsg(m){
+ if(m.t==='hi'){role='guest';me=m.slot;if(m.code)code=m.code;showLobby();toast('"'+code+'" odasına katıldın!')}
+ else if(m.t==='full'){$('net').textContent='Oda dolu ya da oyun başlamış.'}
+ else if(m.t==='lobby'){setSlots(m.p);botSel=m.bots;if(m.code)code=m.code;if(mode==='lobby')renderLobby()}
+ else if(m.t==='start'){setSlots(m.p);resetState();apply(m.init);beginPlay();if(slots[me].pick>=0)focus(C[slots[me].pick])}
+ else if(m.t==='s'){apply(m)}
+ else if(m.t==='toast'){toast(m.m)}
+ else if(m.t==='ev'){toast(m.m);beep(m.s)}
+ else if(m.t==='end'){end2(m.w)}}
+function end2(w){if(mode==='over')return;mode='over';showEnd(w)}
+function snap(){return{t:'s',o:C.map(c=>c.owner),n:C.map(c=>Math.round(c.troops*10)/10),a:armies.map(a=>[a.s.id,a.t.id,a.o,a.n,Math.round(a.p*1000)/1000,Math.round(a.dur*100)/100,a.lk]),l:links.map(L=>[L.s.id,L.t.id,L.o]),g:G.map(x=>Math.floor(x)),lv:LV,k:C.map(c=>c.capital?1:0).join(''),x:C.map(c=>Math.round(c.lost||0)),at:C.map(c=>c.combatT>0?c.att:-1),T:Math.round(gameT*10)/10}}
+function apply(m){C.forEach((c,i)=>{if(m.o[i]!==undefined)c.owner=m.o[i];if(m.n[i]!==undefined)c.troops=m.n[i]});armies=m.a.map(x=>({s:C[x[0]],t:C[x[1]],o:x[2],n:x[3],p:x[4],dur:x[5],lk:x[6]})).filter(a=>a.s&&a.t);links=m.l.map(x=>({s:C[x[0]],t:C[x[1]],o:x[2],acc:0})).filter(l=>l.s&&l.t);G=m.g;LV=m.lv;gameT=m.T;if(m.x)C.forEach((c,i)=>{c.lost=m.x[i]||0});if(m.at)C.forEach((c,i)=>{c.att=m.at[i];c.combatT=m.at[i]>=0?0.5:0});if(m.k)C.forEach((c,i)=>{c.capital=m.k[i]==='1'})}
+function beginPlay(){mode='play';document.body.classList.add('play');$('lobby').hidden=true;$('menu').hidden=true;speed=1;$('spd').hidden=role!=='solo';toast('Sürükle-bırak = hat kur · ✕ = hattı kes · iki parmakla yakınlaştır')}
+function startGame(){if(mode!=='lobby'||slots[0].pick<0)return;
+ const hum=slots.map((s,i)=>s.type==='human'?i:-1).filter(i=>i>=0);let nb=Math.min(botSel,NS-hum.length);
+ for(let i=0;i<NS&&nb>0;i++)if(slots[i].type==='none'){slots[i]={type:'bot',name:'Bot '+PAL[i].n,pick:-1,ready:true};nb--}
+ resetState();
+ for(const i of hum){const c=C[slots[i].pick];c.owner=i;c.troops=45;c.capital=true}
+ const placed=C.filter(c=>c.owner>=0);
+ for(let i=0;i<NS;i++)if(slots[i].type==='bot'){const pool=C.filter(c=>c.owner<0&&c.pwr>.85&&c.pwr<1.95);let b=null,bd=-1;
+  for(let k=0;k<14;k++){const c=pool[Math.random()*pool.length|0];const d=Math.min(1e9,...placed.map(p=>Math.hypot(p.x-c.x,p.y-c.y)));if(d>bd){bd=d;b=c}}
+  b.owner=i;b.troops=45;b.capital=true;placed.push(b)}
+ beginPlay();bcast({t:'start',p:pub(),init:snap()});focus(C[slots[me].pick])}
+
+/* ---------- çizim ---------- */
+const scr=c=>[c.x*v.k+v.x,c.y*v.k+v.y];
+function cp(x0,y0,x1,y1){return[(x0+x1)/2-(y1-y0)*.18,(y0+y1)/2+(x1-x0)*.18]}
+function crv(s,t){const a=s.id<t.id?s:t,b=s.id<t.id?t:s,A=scr(a),Bp=scr(b),c=cp(A[0],A[1],Bp[0],Bp[1]),S0=scr(s),T0=scr(t);return[S0[0],S0[1],c[0],c[1],T0[0],T0[1]]}
+function bz(p,K){const u=1-p;return[u*u*K[0]+2*u*p*K[2]+p*p*K[4],u*u*K[1]+2*u*p*K[3]+p*p*K[5]]}
+function rc(r){const t=Math.min(1,Math.max(0,(Math.log2(Math.max(r,.01))+1)/2));const h=t<.5?210-t*150:135-(t-.5)*270;return 'hsl('+Math.round(h)+',95%,60%)'}
+const CY='#7ee7ff';
+const ratioCol=(s,t)=>t.owner===me?CY:rc((s.troops*.5)/Math.max(1,t.troops));
+const mid=L=>bz(.5,crv(L.s,L.t));
+function arrow(K,cl,p){const m0=bz(p-.06,K),m1=bz(p,K),an=Math.atan2(m1[1]-m0[1],m1[0]-m0[0]);ctx.fillStyle=cl;ctx.beginPath();ctx.moveTo(m1[0]+9*Math.cos(an),m1[1]+9*Math.sin(an));
+ ctx.lineTo(m1[0]-7*Math.cos(an-.9),m1[1]-7*Math.sin(an-.9));ctx.lineTo(m1[0]-7*Math.cos(an+.9),m1[1]-7*Math.sin(an+.9));ctx.fill()}
+const off=K=>Math.max(K[0],K[2],K[4])<-40||Math.min(K[0],K[2],K[4])>W+40||Math.max(K[1],K[3],K[5])<-40||Math.min(K[1],K[3],K[5])>H+40;
+let kc=new Map(),lod=false;
+function crvM(s,t){const k=s.id*512+t.id;let K=kc.get(k);if(!K){K=crv(s,t);K.cl=null;kc.set(k,K)}return K}
+const clOf=(K,s,t)=>K.cl||(K.cl=ratioCol(s,t));
+function glow(K,cl,w,a){ctx.strokeStyle=cl;ctx.globalAlpha=a;ctx.lineWidth=w;ctx.lineCap='round';ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(K[0],K[1]);ctx.quadraticCurveTo(K[2],K[3],K[4],K[5]);ctx.stroke();ctx.globalAlpha=1}
+function marker(K,cl){const m=bz(.5,K);ctx.fillStyle='rgba(8,14,30,.85)';ctx.strokeStyle=cl;ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(m[0],m[1],9,0,7);ctx.fill();ctx.stroke();
+ ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(m[0]-3,m[1]-3);ctx.lineTo(m[0]+3,m[1]+3);ctx.moveTo(m[0]+3,m[1]-3);ctx.lineTo(m[0]-3,m[1]+3);ctx.stroke()}
+function drawLinks(){const T=performance.now()/1000,bk={};
+ for(const L of links){const own=L.o===me,K=crvM(L.s,L.t);if(off(K))continue;const cl=own?clOf(K,L.s,L.t):col(L.o);
+  if(lod){const key=cl+own;let b=bk[key];if(!b)bk[key]=b={cl,own,ks:[]};b.ks.push(K)}
+  else{glow(K,cl,own?8:5,own?.16:.07);
+   ctx.strokeStyle=cl;ctx.lineWidth=own?2.6:1.6;ctx.globalAlpha=own?.95:.5;ctx.setLineDash([9,8]);ctx.lineDashOffset=-T*30;
+   ctx.beginPath();ctx.moveTo(K[0],K[1]);ctx.quadraticCurveTo(K[2],K[3],K[4],K[5]);ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=own?1:.6;
+   arrow(K,cl,.94);ctx.beginPath();ctx.arc(K[0],K[1],own?6:4,0,7);ctx.fill();ctx.globalAlpha=1}
+  if(own&&(!lod||near(K)))marker(K,cl)}
+ if(lod)for(const key in bk){const b=bk[key];ctx.strokeStyle=b.cl;ctx.globalAlpha=b.own?.8:.4;ctx.lineWidth=b.own?2:1.2;ctx.lineCap='round';ctx.beginPath();for(const K of b.ks){ctx.moveTo(K[0],K[1]);ctx.quadraticCurveTo(K[2],K[3],K[4],K[5])}ctx.stroke()}ctx.globalAlpha=1}
+function near(K){const m=bz(.5,K);return Math.hypot(m[0]-mouse.x,m[1]-mouse.y)<70}
+function drawArmies(){const pb={};for(const a of armies){const K=crvM(a.s,a.t);if(off(K))continue;const cl=a.o===me?clOf(K,a.s,a.t):col(a.o);
+ if(lod&&a.lk){const q=bz(Math.min(1,a.p),K);(pb[cl]||(pb[cl]=[])).push(q);continue}
+ if(!a.lk)glow(K,cl,1.5,.22);
+ ctx.fillStyle=cl;
+ for(let j=0;j<(a.lk?4:7);j++){const p=a.p-j*.012;if(p<0)break;const q=bz(Math.min(1,p),K),r=(a.lk?3.8:5.5)-j*.5;ctx.globalAlpha=1-j*.15;ctx.beginPath();ctx.arc(q[0],q[1],r,0,7);ctx.fill();
+  if(!j){ctx.globalAlpha=.22;ctx.beginPath();ctx.arc(q[0],q[1],r+4,0,7);ctx.fill()}}
+ ctx.globalAlpha=1;if(!a.lk||a.n>1){const h=bz(Math.min(1,a.p),K);ctx.fillStyle='#fff';ctx.font='700 10px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(a.n,h[0],h[1]-13)}}
+ for(const cl in pb){ctx.fillStyle=cl;ctx.beginPath();for(const q of pb[cl]){ctx.moveTo(q[0]+3,q[1]);ctx.arc(q[0],q[1],3,0,7)}ctx.fill()}}
+function pill(txt,x,y,cl){ctx.font='700 12px system-ui';const w=ctx.measureText(txt).width+18;ctx.fillStyle='rgba(8,14,30,.78)';ctx.strokeStyle=cl;ctx.lineWidth=1.2;ctx.beginPath();(ctx.roundRect||ctx.rect).call(ctx,x-w/2,y-12,w,24,12);ctx.fill();ctx.stroke();ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(txt,x,y)}
+function drawDrag(){const g=dg,tt=g.t,T=performance.now()/1000;let sum=0;g.grp.forEach(s=>sum+=Math.floor(s.troops*.5));
+ const hit=tt&&!g.grp.has(tt)?tt:null;let r=null;if(hit&&hit.owner!==me)r=sum/Math.max(1,hit.troops);
+ const cl=!hit?'#cfe8ff':hit.owner===me?CY:rc(r),tp=hit?scr(hit):[mouse.x,mouse.y];
+ g.grp.forEach(s=>{let K;if(hit)K=crv(s,hit);else{const a=scr(s),c=cp(a[0],a[1],tp[0],tp[1]);K=[a[0],a[1],c[0],c[1],tp[0],tp[1]]}
+  if(g.grp.size>6){ctx.strokeStyle=cl;ctx.globalAlpha=.8;ctx.lineWidth=2.2;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(K[0],K[1]);ctx.quadraticCurveTo(K[2],K[3],K[4],K[5]);ctx.stroke();ctx.globalAlpha=1;return}
+  glow(K,cl,10,.2);ctx.strokeStyle=cl;ctx.lineWidth=3.5;ctx.lineCap='round';ctx.setLineDash([10,9]);ctx.lineDashOffset=-T*40;
+  ctx.beginPath();ctx.moveTo(K[0],K[1]);ctx.quadraticCurveTo(K[2],K[3],K[4],K[5]);ctx.stroke();ctx.setLineDash([]);arrow(K,cl,.97);
+  ctx.beginPath();ctx.arc(K[0],K[1],7,0,7);ctx.fill()});
+ if(hit){const rr=16+4*Math.sin(T*6);ctx.strokeStyle=cl;ctx.globalAlpha=.25;ctx.lineWidth=8;ctx.beginPath();ctx.arc(tp[0],tp[1],rr,0,7);ctx.stroke();ctx.globalAlpha=1;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(tp[0],tp[1],rr,0,7);ctx.stroke();
+  pill((g.burst?'Dalga · ':'Hat · ')+sum+' → '+Math.floor(hit.troops)+' (⚡×'+hit.pwr.toFixed(1)+')'+(r!=null?'   ×'+r.toFixed(2):'  (aktarım)'),tp[0],tp[1]-34,cl)}
+ else pill(sum+' asker · '+g.grp.size+' ülke',mouse.x,mouse.y-26,cl)}
+function drawBox(){const x=Math.min(bx.x0,bx.x1),y=Math.min(bx.y0,bx.y1),w=Math.abs(bx.x1-bx.x0),h=Math.abs(bx.y1-bx.y0);ctx.fillStyle='rgba(79,209,255,.12)';ctx.strokeStyle='#4fd1ff';ctx.lineWidth=1.5;ctx.setLineDash([6,5]);ctx.fillRect(x,y,w,h);ctx.strokeRect(x,y,w,h);ctx.setLineDash([])}
+
+function drawMap(play,pk,blinkPhase){c0.setTransform(1,0,0,1,0,0);c0.clearRect(0,0,cv0.width,cv0.height);
+ c0.setTransform(D*v.k,0,0,D*v.k,D*v.x,D*v.y);
+ c0.strokeStyle='rgba(255,255,255,.05)';c0.lineWidth=1/v.k;c0.beginPath();
+ for(let i=0;i<=36;i++){c0.moveTo(i*2000/36,0);c0.lineTo(i*2000/36,1000)}for(let i=0;i<=18;i++){c0.moveTo(0,i*1000/18);c0.lineTo(2000,i*1000/18)}c0.stroke();c0.lineJoin='round';
+ for(const c of C){
+  const o=play?c.owner:(pk[c.id]!==undefined?pk[c.id]:-1);
+  const att=play?getAttacker(c):-1;
+  const inCombat=att>=0;
+  const isSel=sel.has(c)||(dg&&dg.grp.has(c))||(!play&&pk[c.id]===me);
+  const cl=(inCombat&&blinkPhase)?col(att):col(o);
+  c0.globalAlpha=(inCombat?.72:.5)+(isSel?.15:0);
+  c0.fillStyle=cl;c0.fill(c.path);c0.globalAlpha=1;
+  if(isSel||inCombat){
+   c0.strokeStyle=inCombat?(blinkPhase?col(o):col(att)):cl;
+   c0.globalAlpha=inCombat?.55:.3;
+   c0.lineWidth=(inCombat?5:8)/v.k;
+   c0.stroke(c.path);c0.globalAlpha=1;
   }
+  c0.strokeStyle=isSel?'#fff':(inCombat?(blinkPhase?col(o):col(att)):'rgba(10,16,32,.85)');
+  c0.lineWidth=(isSel?2.2:(inCombat?1.6:.75))/v.k;
+  c0.stroke(c.path);
+ }
+}
 
-  function netSend(msg, skipConn = null) {
-    if (netState.bc) {
-      try { netState.bc.postMessage(msg); } catch (e) {}
-    }
-    netState.conns.forEach(c => {
-      if (c && c.open && c !== skipConn) {
-        try { c.send(msg); } catch (e) {}
-      }
+function drawLabels(){c1.setTransform(1,0,0,1,0,0);c1.clearRect(0,0,cv1.width,cv1.height);c1.setTransform(D,0,0,D,0,0);c1.textAlign='center';c1.textBaseline='middle';c1.lineJoin='round';
+ for(const c of C){const q=scr(c);if(q[0]<-50||q[1]<-50||q[0]>W+50||q[1]>H+50)continue;const s=c.sz*v.k;
+  if(s>16){const f=Math.round(11+Math.min(9,s/14)),tx=(c.capital?'★':'')+Math.floor(c.troops);c1.font='700 '+f+'px system-ui';c1.lineWidth=3;c1.strokeStyle='rgba(0,0,0,.65)';c1.strokeText(tx,q[0],q[1]);c1.fillStyle='#fff';c1.fillText(tx,q[0],q[1]);
+   if(s>70){c1.font='500 10px system-ui';c1.fillStyle='rgba(255,255,255,.65)';c1.fillText(c.name+' (×'+c.pwr.toFixed(1)+')',q[0],q[1]+14+f/2)}}
+  else{c1.fillStyle=col(c.owner);c1.strokeStyle='#fff';c1.lineWidth=1;c1.beginPath();c1.arc(q[0],q[1],3,0,7);c1.fill();c1.stroke()}}}
+
+function drawPing(){
+ if(!pingTarget)return;
+ const now=performance.now();
+ if(now>pingTarget.until){pingTarget=null;return}
+ const c=pingTarget.c,q=scr(c),t=(now%700)/700,cl=col(c.owner);
+ ctx.save();
+ ctx.strokeStyle=cl;ctx.lineWidth=2.5;
+ ctx.beginPath();ctx.arc(q[0],q[1],14+t*26,0,7);ctx.globalAlpha=1-t;ctx.stroke();
+ ctx.beginPath();ctx.arc(q[0],q[1],12,0,7);ctx.globalAlpha=.95;ctx.stroke();
+ pill('🎯 '+c.name+' ('+Math.floor(c.troops)+')',q[0],q[1]-28,cl);
+ ctx.restore();
+}
+
+function draw(){const play=mode==='play'||mode==='over',pk={};if(!play)slots.forEach((s,i)=>{if(s.pick>=0)pk[s.pick]=i});
+ let ho=0,hasCombat=false;
+ for(const c of C){
+  const o=play?c.owner:(pk[c.id]!==undefined?pk[c.id]:-1);
+  const att=play?getAttacker(c):-1;
+  if(att>=0)hasCombat=true;
+  ho=(ho*33+o+2+(att+2)*7)|0;
+ }
+ const blinkPhase=(Math.floor(performance.now()/220)&1)===1;
+ let h=ho;sel.forEach(c=>{h=(h*31+c.id+7)|0});if(dg)dg.grp.forEach(c=>{h=(h*37+c.id+3)|0});
+ const view=v.k.toFixed(4)+'|'+v.x.toFixed(1)+'|'+v.y.toFixed(1)+'|'+W+'|'+H+'|'+D+'|'+C.length;
+ const s0=h+'|'+view+'|'+mode+'|'+(hasCombat?blinkPhase:0);
+ if(s0!==sigM){sigM=s0;drawMap(play,pk,blinkPhase)}
+ if(play){const s1=ho+'|'+view+'|'+Math.floor(performance.now()/250);if(s1!==sigL){sigL=s1;drawLabels()}
+  kc.clear();lod=links.length>28||armies.length>90;
+  ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,cv.width,cv.height);
+  if(hover&&!dg){ctx.setTransform(D*v.k,0,0,D*v.k,D*v.x,D*v.y);ctx.globalAlpha=.2;ctx.fillStyle='#fff';ctx.fill(hover.path);ctx.globalAlpha=1}
+  const at=aidTarget();if(at&&(at.lost||0)>3){ctx.setTransform(D*v.k,0,0,D*v.k,D*v.x,D*v.y);ctx.strokeStyle='rgba(255,93,115,.9)';ctx.lineWidth=3/v.k;ctx.stroke(at.path)}
+  ctx.setTransform(D,0,0,D,0,0);
+  drawLinks();drawArmies();drawPing();if(dg)drawDrag();if(bx)drawBox();dynOn=true}
+ else{if(sigL!=='off'){sigL='off';c1.setTransform(1,0,0,1,0,0);c1.clearRect(0,0,cv1.width,cv1.height)}
+  if(dynOn){ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,cv.width,cv.height);dynOn=false}}}
+
+/* ---------- girdi ---------- */
+function pick(sx,sy,r){const wx=(sx-v.x)/v.k,wy=(sy-v.y)/v.k;ctx.setTransform(1,0,0,1,0,0);
+ for(let i=C.length-1;i>=0;i--){const b=C[i].bb;if(wx<b[0]||wx>b[2]||wy<b[1]||wy>b[3])continue;if(ctx.isPointInPath(C[i].path,wx,wy))return C[i]}
+ let b=null,bd=(r||12)/v.k;for(const c of C){const d=Math.hypot(c.x-wx,c.y-wy);if(d<bd){bd=d;b=c}}return b}
+function linkNear(x,y){let b=null,bd=12;for(const L of links){if(L.o!==me)continue;const K=crv(L.s,L.t);for(let i=0;i<=20;i++){const q=bz(i/20,K),d=Math.hypot(q[0]-x,q[1]-y);if(d<bd){bd=d;b=L}}}return b}
+function midHit(x,y){return links.find(L=>{if(L.o!==me)return false;const m=mid(L);return Math.hypot(m[0]-x,m[1]-y)<(touch?18:13)})}
+const cutLink=L=>cmd({k:'cut',s:L.s.id,t:L.t.id});
+const sendLink=(grp,t,b)=>{const f=[...grp].filter(s=>s.owner===me&&s!==t).map(s=>s.id);if(f.length)cmd({k:b?'burst':'link',f,t:t.id})};
+function click(c){if(mode==='lobby'){if(c)pickCountry(c.id);return}
+ if(mode!=='play')return;if(!c){sel.clear();return}
+ if(c.owner===me){sel.has(c)?sel.delete(c):sel.add(c)}else if(sel.size)sendLink(sel,c,false)}
+function boxSel(b){const x0=Math.min(b.x0,b.x1),x1=Math.max(b.x0,b.x1),y0=Math.min(b.y0,b.y1),y1=Math.max(b.y0,b.y1);sel.clear();
+ for(const c of C)if(c.owner===me){const q=scr(c);if(q[0]>=x0&&q[0]<=x1&&q[1]>=y0&&q[1]<=y1)sel.add(c)}}
+const ptrs=new Map();let pinch=null,skipUp=false,drag=null,dg=null,bx=null,boxMode=false;
+cv.addEventListener('pointerdown',e=>{if(e.button===2)return;touch=e.pointerType==='touch';ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});try{cv.setPointerCapture(e.pointerId)}catch(_){}
+ if(ptrs.size===2){const[a,b]=[...ptrs.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y)||1,k:v.k};drag=null;dg=null;bx=null;skipUp=true;return}
+ skipUp=false;drag={x:e.clientX,y:e.clientY,vx:v.x,vy:v.y,m:false,src:null,box:false};
+ if(mode==='play'){const c=pick(e.clientX,e.clientY,touch?26:12),mh=midHit(e.clientX,e.clientY);
+  if(mh)drag.cut=mh;else if(boxMode)drag.box=true;else if(c&&c.owner===me){drag.src=c;drag.burst=e.shiftKey}else if(e.shiftKey)drag.box=true}});
+cv.addEventListener('pointermove',e=>{mouse={x:e.clientX,y:e.clientY};if(ptrs.has(e.pointerId))ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ if(pinch&&ptrs.size>=2){const[a,b]=[...ptrs.values()],d=Math.hypot(a.x-b.x,a.y-b.y)||1,mx=(a.x+b.x)/2,my=(a.y+b.y)/2,nk=Math.min(40,Math.max(fitK*.8,pinch.k*d/pinch.d));v.x=mx-(mx-v.x)*nk/v.k;v.y=my-(my-v.y)*nk/v.k;v.k=nk;return}
+ const c=pick(e.clientX,e.clientY,touch?26:12);
+ if(drag){const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+  if(!drag.m&&Math.hypot(dx,dy)>6){drag.m=true;if(drag.src)dg={grp:new Set(sel.has(drag.src)?sel:[drag.src]),t:null,last:drag.src,burst:drag.burst}}
+  if(drag.m){if(dg){if(c!==dg.last){if(dg.last&&dg.last.owner===me)dg.grp.add(dg.last);dg.last=c}dg.t=c}
+   else if(drag.box)bx={x0:drag.x,y0:drag.y,x1:e.clientX,y1:e.clientY};
+   else if(!drag.cut){v.x=drag.vx+dx;v.y=drag.vy+dy}}}
+ hover=drag&&drag.m?null:c;const t=$('tip');
+ if(hover&&!touch){t.style.display='block';t.style.left=Math.min(e.clientX+14,W-210)+'px';t.style.top=(e.clientY+14)+'px';
+  const ow=hover.owner<0?'Tarafsız':(slots[hover.owner].name||PAL[hover.owner].n);
+  const rate=hover.owner<0?(0.95*hover.pwr*mult(me)):prod(hover);
+  t.innerHTML='<b>'+hover.name+'</b> <span style="color:#4fd1ff">⚡×'+hover.pwr.toFixed(2)+'</span><br>'+ow+(mode==='play'?' · '+Math.floor(hover.troops)+' asker<br><span style="color:#9fb2d0">'+(hover.owner<0?'fethedince üretim +'+rate.toFixed(2)+'/sn':'üretim +'+rate.toFixed(2)+'/sn')+'</span>':'')}else t.style.display='none'});
+cv.addEventListener('pointerup',e=>{ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;
+ if(skipUp){if(!ptrs.size)skipUp=false;drag=null;return}
+ if(!drag)return;
+ if(!drag.m){if(drag.cut)cutLink(drag.cut);else click(pick(e.clientX,e.clientY,touch?26:12))}
+ else if(dg){const t=dg.t;if(t&&!dg.grp.has(t)){sendLink(dg.grp,t,dg.burst);sel.clear();dg.grp.forEach(c=>sel.add(c))}}
+ else if(bx)boxSel(bx);
+ drag=null;dg=null;bx=null});
+cv.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId);pinch=null;drag=null;dg=null;bx=null});
+cv.addEventListener('pointerleave',()=>{$('tip').style.display='none'});
+cv.addEventListener('contextmenu',e=>{e.preventDefault();if(mode!=='play')return;const L=linkNear(e.clientX,e.clientY);if(L){cutLink(L);return}
+ const c=pick(e.clientX,e.clientY);if(c&&c.owner===me)cmd({k:'cutc',c:c.id})});
+function zoom(f,mx,my){const nk=Math.min(40,Math.max(fitK*.8,v.k*f));v.x=mx-(mx-v.x)*nk/v.k;v.y=my-(my-v.y)*nk/v.k;v.k=nk}
+cv.addEventListener('wheel',e=>{e.preventDefault();zoom(e.deltaY<0?1.2:1/1.2,e.clientX,e.clientY)},{passive:false});
+$('zi').onclick=()=>zoom(1.4,W/2,H/2);$('zo').onclick=()=>zoom(1/1.4,W/2,H/2);
+document.querySelectorAll('#spd [data-s]').forEach(b=>b.onclick=()=>{if(role!=='solo')return;speed=+b.dataset.s;document.querySelectorAll('#spd [data-s]').forEach(x=>x.classList.toggle('on',x===b))});
+$('selAll').onclick=()=>C.forEach(c=>c.owner===me&&sel.add(c));$('clr').onclick=()=>sel.clear();
+$('boxb').onclick=()=>{boxMode=!boxMode;$('boxb').classList.toggle('on',boxMode)};
+$('cutall').onclick=()=>cmd({k:'cuta'});
+$('aid').onclick=()=>{const t=aidTarget();if(!t){toast('Yardım gerektiren ülke yok');return}beep(2);cmd({k:'aid',t:t.id})};
+$('foeBtn').onclick=()=>{
+ const p=$('foePanel');
+ p.hidden=!p.hidden;
+ $('foeBtn').classList.toggle('on',!p.hidden);
+ if(!p.hidden){
+  const foes=getEnemyCountries();
+  if(!foes.length){toast('Kalan düşman ülkesi yok!');return}
+  foeIdx=foeIdx%foes.length;
+  focusEnemyCountry(foes[foeIdx]);
+  foeIdx=(foeIdx+1)%foes.length;
+ }
+};
+$('foeNext').onclick=()=>{
+ const foes=getEnemyCountries();
+ if(!foes.length){toast('Kalan düşman ülkesi yok!');return}
+ foeIdx=foeIdx%foes.length;
+ focusEnemyCountry(foes[foeIdx]);
+ foeIdx=(foeIdx+1)%foes.length;
+};
+$('mute').onclick=()=>{muted=!muted;$('mute').textContent=muted?'🔇':'🔊'};
+$('diff').onchange=e=>{botDiff=+e.target.value};
+addEventListener('keydown',e=>{if(mode!=='play'||e.target.tagName==='INPUT')return;if(e.key==='a'||e.key==='A')$('selAll').click();if(e.key==='Escape')sel.clear();if(e.key==='h'||e.key==='H')$('aid').click();if(e.key==='f'||e.key==='F')$('foeNext').click();if(e.key===' '&&role==='solo'){e.preventDefault();speed=speed?0:1}});
+
+/* ---------- arayüz ---------- */
+const ub={};UP.forEach(u=>{const b=document.createElement('button');b.className='up';b.innerHTML='<b></b><small>'+u.d+'</small><small class="c"></small>';
+ b.onclick=()=>{const l=LV[me][u.k];if(l>=12)return;if(G[me]<cost(l)){toast('Yetersiz altın');return}cmd({k:'up',u:u.k});beep(2)};
+ $('ups').appendChild(b);ub[u.k]={el:b,t:b.children[0],c:b.children[2]}});
+function aidTarget(){if(sel.size===1){const c=[...sel][0];if(c.owner===me)return c}
+ let b=null,bl=3;for(const c of C)if(c.owner===me&&(c.lost||0)>bl){bl=c.lost;b=c}return b}
+function hud2(){const cnt=Array(NS).fill(0),tr=Array(NS).fill(0);for(const c of C)if(c.owner>=0){cnt[c.owner]++;tr[c.owner]+=c.troops}
+ const rows=[];for(let o=0;o<NS;o++)if(cnt[o])rows.push(o);rows.sort((a,b)=>cnt[b]-cnt[a]);
+ $('rank').innerHTML=rows.map(o=>'<div><i style="background:'+PAL[o].c+'"></i>'+(o===me?'<b>Sen</b>':(slots[o].name||PAL[o].n))+'<span>'+cnt[o]+' ülke · '+Math.floor(tr[o])+'</span></div>').join('');
+ const at=aidTarget();$('aidT').textContent=at?at.name:'sorunlu ülke yok';$('aid').classList.toggle('alert',!!at&&(at.lost||0)>3);
+ const foes=getEnemyCountries();
+ $('foeT').textContent=foes.length?foes.length+' ülke kaldı':'düşman kalmadı';
+ if(!$('foePanel').hidden){
+  const sig=foes.map(c=>c.id+':'+c.owner+':'+Math.floor(c.troops/5)).join('|');
+  if(sig!==foeSig){
+   foeSig=sig;
+   const fl=$('foeList');fl.innerHTML='';
+   if(!foes.length){fl.innerHTML='<span style="color:var(--m);padding:4px">Hiç düşman ülkesi kalmadı.</span>'}
+   else{
+    foes.forEach(c=>{
+     const b=document.createElement('button');
+     b.className='foeItem';
+     b.innerHTML='<i style="background:'+col(c.owner)+'"></i><b>'+c.name+'</b><span>'+Math.floor(c.troops)+'</span>';
+     b.onclick=()=>focusEnemyCountry(c);
+     fl.appendChild(b);
     });
+   }
   }
+ }
+}
+function hud(){let n=0,t=0;for(const c of C)if(c.owner===me){n++;t+=c.troops}
+ $('sC').textContent=n+' / '+C.length;$('sT').textContent=Math.floor(t);$('sG').textContent=Math.floor(G[me])+' (+'+(n*5*incM(me)).toFixed(1)+'/sn)';
+ $('sL').textContent=links.filter(L=>L.o===me).length+' (maks '+maxL(me)+'/ülke)';
+ UP.forEach(u=>{const l=LV[me][u.k],c=cost(l),b=ub[u.k];b.t.textContent=u.n+' · Sv.'+l;b.c.textContent=l>=12?'MAKS':'💰 '+c;b.el.classList.toggle('dis',l>=12||G[me]<c)});
+ sel.forEach(c=>{if(c.owner!==me)sel.delete(c)});hud2();
+ if(mode==='play'&&gameT>4&&!outShown&&!n&&!armies.some(a=>a.o===me)){outShown=true;showEnd(-3)}}
+$('goOn').onclick=()=>{$('end').hidden=true;if(mode==='over')mode='play'};
+$('go2').onclick=()=>{cleanupPeer();location.reload()};
+$('bSolo').onclick=()=>{cleanupPeer();role='solo';me=0;emptySlots();slots[0]={type:'human',name:'Sen',pick:-1,ready:true};code='';showLobby()};
+$('bHost').onclick=()=>{$('bHost').disabled=true;hostRoom($('jcode').value);setTimeout(()=>{$('bHost').disabled=false},2500)};
+$('bJoin').onclick=()=>joinRoom($('jcode').value);
+$('jcode').onkeydown=e=>{if(e.key==='Enter')joinRoom($('jcode').value)};
+$('setCode').onclick=()=>{
+ if(role!=='host')return;
+ const nc=cleanCode($('lcode').value);
+ if(!nc){toast('Geçerli bir kod yazın');return}
+ hostRoom(nc);
+};
+$('lcode').onkeydown=e=>{if(e.key==='Enter'&&role==='host')$('setCode').click()};
+$('q').oninput=fillList;
+$('botsel').onchange=e=>{botSel=+e.target.value;if(role==='host')bcLobby()};
+$('bReady').onclick=()=>{const r=!slots[me].ready;conn&&conn.open&&conn.send({t:'ready',v:r})};
+$('bStart').onclick=startGame;
+$('bBack').onclick=()=>{cleanupPeer();location.reload()};
+const cpy=(t,m)=>{(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast(m),()=>toast(t))};
+$('cpCode').onclick=()=>cpy(code,'Kod kopyalandı: '+code);
+$('cpLink').onclick=()=>cpy(location.href.split('#')[0]+'#oda='+code,'Davet linki kopyalandı');
+if(!window.Peer)$('net').textContent='Online mod şu an kullanılamıyor (internet/PeerJS yüklenemedi). Tek kişilik çalışır.';
+const hm=/#oda=([A-Za-z0-9]{1,12})/.exec(location.hash);if(hm&&window.Peer){$('jcode').value=hm[1].toUpperCase();setTimeout(()=>joinRoom(hm[1]),400)}
 
-  function createOnlineRoom() {
-    const code = generateRoomCode();
-    netState.active = true;
-    netState.isHost = true;
-    netState.roomCode = code;
-    mySlot = 0;
-    const nick = ($('nickInp').value || 'Kurucu').trim();
-    netState.players = [{
-      id: netState.myId,
-      name: nick,
-      slot: 0,
-      country: picked ? picked.name : null,
-      ready: false,
-      isBot: false
-    }];
-
-    setupBroadcastChannel(code);
-    setP2PStatus('🟡 Oda sunucusu açılıyor...', 'PeerJS');
-
-    // Open PeerJS host with explicit STUN servers for GitHub Pages cross-network P2P
-    if (window.Peer) {
-      try {
-        if (netState.peer) netState.peer.destroy();
-        netState.peer = new Peer('wc-gh-room-' + code, PEER_CONFIG);
-        netState.peer.on('open', () => {
-          setP2PStatus('🟢 Oda Aktif (GitHub Pages P2P)', 'Kurucu (Host)');
-        });
-        netState.peer.on('connection', conn => {
-          netState.conns.push(conn);
-          conn.on('data', data => handleNetMessage(data, conn));
-          conn.on('close', () => {
-            netState.conns = netState.conns.filter(c => c !== conn);
-          });
-        });
-        netState.peer.on('error', err => {
-          setP2PStatus('🟠 Yerel/Yedek Kanal Aktif (' + (err.type || 'P2P') + ')', 'Hazır');
-        });
-      } catch (e) {}
-    }
-
-    $('lobbyEntryRow').hidden = true;
-    $('lobbyRoomView').hidden = false;
-    $('roomCodeDisplay').textContent = code;
-    renderLobbyPlayers();
-    updateGoButtonState();
-    toast('Oda kuruldu! Kodu veya davet linkini arkadaşlarınla paylaş.');
-  }
-
-  function joinOnlineRoom(rawCode) {
-    const code = (rawCode || $('roomCodeInp').value || '').trim().toUpperCase();
-    if (code.length < 4) { toast('Lütfen geçerli bir oda kodu girin.'); return; }
-    netState.active = true;
-    netState.isHost = false;
-    netState.roomCode = code;
-    const nick = ($('nickInp').value || 'Oyuncu').trim();
-
-    setupBroadcastChannel(code);
-    setP2PStatus('🟡 ' + code + ' odasına bağlanılıyor...', 'WebRTC');
-
-    const joinPacket = {
-      type: 'lobby_join',
-      id: netState.myId,
-      name: nick,
-      country: picked ? picked.name : null
-    };
-
-    if (netState.bc) netState.bc.postMessage(joinPacket);
-
-    if (window.Peer) {
-      try {
-        if (netState.peer) netState.peer.destroy();
-        netState.peer = new Peer(PEER_CONFIG);
-        netState.peer.on('open', () => {
-          const conn = netState.peer.connect('wc-gh-room-' + code, { reliable: true });
-          netState.conns = [conn];
-          conn.on('open', () => {
-            setP2PStatus('🟢 Odaya Bağlandı (P2P Aktif)', 'Canlı');
-            conn.send(joinPacket);
-          });
-          conn.on('data', data => handleNetMessage(data, conn));
-          conn.on('close', () => {
-            setP2PStatus('🔴 Kurucu ile bağlantı kesildi', 'Kopuk');
-          });
-        });
-        netState.peer.on('error', () => {
-          setP2PStatus('🟠 Oda aranıyor / Yerel sekme modu', 'Bekleniyor');
-        });
-      } catch (e) {}
-    }
-
-    $('lobbyEntryRow').hidden = true;
-    $('lobbyRoomView').hidden = false;
-    $('roomCodeDisplay').textContent = code;
-    renderLobbyPlayers();
-    updateGoButtonState();
-    toast(code + ' odasına bağlanılıyor...');
-  }
-
-  function leaveOnlineRoom() {
-    netState.active = false;
-    netState.isHost = false;
-    netState.players = [];
-    netState.conns = [];
-    mySlot = 0;
-    if (netState.bc) { netState.bc.close(); netState.bc = null; }
-    if (netState.peer) { netState.peer.destroy(); netState.peer = null; }
-    setP2PStatus('🟢 GitHub Pages WebRTC P2P Hazır', 'STUN Aktif');
-    $('lobbyEntryRow').hidden = false;
-    $('lobbyRoomView').hidden = true;
-    $('netBadge').hidden = true;
-    updateGoButtonState();
-  }
-
-  // Host broadcasts authoritative state at 5 Hz so all clients stay 100% in sync
-  function broadcastGameState() {
-    if (!netState.active || !netState.isHost || mode !== 'play') return;
-    const cArr = C.map(c => [c.owner, Math.round(c.troops * 10) / 10]);
-    const lArr = links.map(L => [L.s.id, L.t.id, L.o]);
-    netSend({
-      type: 'sync_state',
-      c: cArr,
-      l: lArr,
-      g: fGold.map(x => Math.round(x * 10) / 10),
-      lv: fLv,
-      spd: speed
-    });
-  }
-
-  function applySyncedState(msg) {
-    if (mode !== 'play') return;
-    if (msg.spd !== undefined) speed = msg.spd;
-    if (msg.g) fGold = msg.g;
-    if (msg.lv) fLv = msg.lv;
-    if (msg.c && msg.c.length === C.length) {
-      for (let i = 0; i < C.length; i++) {
-        C[i].owner = msg.c[i][0];
-        // Smoothly reconcile troop counts to prevent visual jitter while staying authoritative
-        const diff = msg.c[i][1] - C[i].troops;
-        if (Math.abs(diff) > 2.5) C[i].troops = msg.c[i][1];
-        else C[i].troops += diff * 0.45;
-      }
-    }
-    if (msg.l) {
-      // Reconcile active links (preserving accumulator progress for existing links)
-      const nextLinks = [];
-      for (const item of msg.l) {
-        const s = C[item[0]], t = C[item[1]], o = item[2];
-        if (!s || !t) continue;
-        const existing = links.find(x => x.s === s && x.t === t && x.o === o);
-        nextLinks.push(existing || { s, t, o, acc: 0.35 });
-      }
-      links = nextLinks;
-    }
-  }
-
-  function handleNetMessage(msg, conn) {
-    if (!msg || !msg.type) return;
-
-    if (msg.type === 'lobby_join' && netState.isHost) {
-      let existing = netState.players.find(p => p.id === msg.id);
-      if (!existing) {
-        const usedSlots = new Set(netState.players.map(p => p.slot));
-        let freeSlot = 1;
-        while (usedSlots.has(freeSlot) && freeSlot < 5) freeSlot++;
-        if (freeSlot >= 5) return;
-        existing = {
-          id: msg.id,
-          name: msg.name || ('Oyuncu ' + (freeSlot + 1)),
-          slot: freeSlot,
-          country: msg.country || null,
-          ready: false,
-          isBot: false
-        };
-        netState.players.push(existing);
-      }
-      broadcastLobbyState();
-    } else if (msg.type === 'lobby_update' && netState.isHost) {
-      const p = netState.players.find(x => x.id === msg.id);
-      if (p) {
-        if (msg.country !== undefined) {
-          const taken = netState.players.some(other => other.id !== p.id && other.country === msg.country);
-          if (!taken) p.country = msg.country;
-        }
-        if (msg.ready !== undefined) p.ready = msg.ready;
-        broadcastLobbyState();
-      }
-    } else if (msg.type === 'lobby_state') {
-      netState.players = msg.players;
-      if (msg.fillBots !== undefined) {
-        netState.fillBots = msg.fillBots;
-        $('fillBotsToggle').classList.toggle('on', netState.fillBots);
-        $('fillBotsToggle').textContent = netState.fillBots ? 'Açık ✓' : 'Kapalı ✕';
-      }
-      const me = netState.players.find(p => p.id === netState.myId);
-      if (me) {
-        mySlot = me.slot;
-        if (me.country && byName[me.country]) picked = byName[me.country];
-        setP2PStatus('🟢 Lobi Bağlantısı Aktif (' + netState.players.length + ' Oyuncu)', 'Slot #' + (mySlot + 1));
-      }
-      renderLobbyPlayers();
-      updateGoButtonState();
-      fill($('q').value);
-    } else if (msg.type === 'game_start') {
-      if (msg.players) {
-        netState.players = msg.players;
-        const me = netState.players.find(p => p.id === netState.myId);
-        if (me) mySlot = me.slot;
-      }
-      startMatchFromState(msg.initCountries);
-    } else if (msg.type === 'sync_state') {
-      if (!netState.isHost) applySyncedState(msg);
-    } else if (msg.type === 'cmd_link') {
-      if (netState.isHost) netSend(msg, conn); // Relay to other peers
-      const grp = msg.sNames.map(n => byName[n]).filter(Boolean);
-      const t = byName[msg.tName];
-      if (grp.length && t) linkGroup(grp, t, msg.o, false);
-    } else if (msg.type === 'cmd_burst') {
-      if (netState.isHost) netSend(msg, conn);
-      const grp = msg.sNames.map(n => byName[n]).filter(Boolean);
-      const t = byName[msg.tName];
-      if (grp.length && t) attackGroup(grp, t, msg.o, false);
-    } else if (msg.type === 'cmd_cut') {
-      if (netState.isHost) netSend(msg, conn);
-      const L = links.find(x => x.s.name === msg.sName && x.t.name === msg.tName && x.o === msg.o);
-      if (L) cutLink(L, false);
-    } else if (msg.type === 'cmd_cut_all') {
-      if (netState.isHost) netSend(msg, conn);
-      for (let i = links.length - 1; i >= 0; i--) {
-        if (links[i].o === msg.o) links.splice(i, 1);
-      }
-    } else if (msg.type === 'cmd_up') {
-      if (netState.isHost) netSend(msg, conn);
-      const curLv = fLv[msg.slot] ? fLv[msg.slot][msg.k] : 12;
-      const cCost = cost(curLv);
-      if (netState.isHost && fGold[msg.slot] >= cCost && curLv < 12) {
-        fGold[msg.slot] -= cCost;
-        fLv[msg.slot][msg.k] = msg.lv;
-      } else if (!netState.isHost && fLv[msg.slot]) {
-        fLv[msg.slot][msg.k] = msg.lv;
-      }
-    }
-  }
-
-  function broadcastLobbyState() {
-    netSend({ type: 'lobby_state', players: netState.players, fillBots: netState.fillBots });
-    renderLobbyPlayers();
-    updateGoButtonState();
-    fill($('q').value);
-  }
-
-  function renderLobbyPlayers() {
-    const box = $('lobbyPlayersList');
-    box.innerHTML = '';
-    netState.players.forEach(p => {
-      const row = document.createElement('div');
-      row.className = 'player-slot';
-      const dot = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${col(p.slot)};margin-right:6px"></span>`;
-      const cText = p.country ? `<b>${p.country}</b>` : `<i style="color:var(--m)">Ülke seçiyor...</i>`;
-      const badge = p.ready
-        ? `<span class="badge ok">Hazır ✓</span>`
-        : `<span class="badge wait">Bekleniyor</span>`;
-      row.innerHTML = `<div>${dot}<b>${p.name}</b> ${p.id === netState.myId ? '(Sen)' : ''} · ${cText}</div>${badge}`;
-      box.appendChild(row);
-    });
-
-    const me = netState.players.find(p => p.id === netState.myId);
-    if (me) {
-      $('readyBtn').classList.toggle('on', me.ready);
-      $('readyBtn').textContent = me.ready ? '✓ Hazırsın (İptal için tıkla)' : '✓ Hazır Ver';
-    }
-  }
-
-  bindInstantButton($('createRoomBtn'), createOnlineRoom);
-  bindInstantButton($('joinRoomBtn'), () => joinOnlineRoom());
-  bindInstantButton($('leaveRoomBtn'), leaveOnlineRoom);
-
-  bindInstantButton($('readyBtn'), () => {
-    if (!netState.active) return;
-    const me = netState.players.find(p => p.id === netState.myId);
-    if (!me) return;
-    if (!me.country) { toast('Hazır vermeden önce bir başlangıç ülkesi seçmelisin!'); return; }
-    const nextReady = !me.ready;
-    if (netState.isHost) {
-      me.ready = nextReady;
-      broadcastLobbyState();
-    } else {
-      netSend({ type: 'lobby_update', id: netState.myId, ready: nextReady });
-    }
-  });
-
-  bindInstantButton($('addBotPlayerBtn'), () => {
-    if (!netState.active || !netState.isHost) {
-      toast('Sadece oda kurucusu lobiye oyuncu ekleyebilir.');
-      return;
-    }
-    if (netState.players.length >= 5) {
-      toast('Lobi maksimum 5 oyuncu kapasitesine ulaştı.');
-      return;
-    }
-    const usedSlots = new Set(netState.players.map(p => p.slot));
-    let freeSlot = 1;
-    while (usedSlots.has(freeSlot) && freeSlot < 5) freeSlot++;
-    const takenCountries = new Set(netState.players.map(p => p.country).filter(Boolean));
-    const pool = C.filter(c => !takenCountries.has(c.name) && c.af > 0.35);
-    const pickC = pool[Math.floor(Math.random() * pool.length)] || C[0];
-    netState.players.push({
-      id: 'bot_' + Date.now() + '_' + freeSlot,
-      name: PAL[freeSlot].n,
-      slot: freeSlot,
-      country: pickC.name,
-      ready: true,
-      isBot: true
-    });
-    broadcastLobbyState();
-  });
-
-  function copyText(txt, msg) {
-    const ta = document.createElement('textarea');
-    ta.value = txt;
-    document.body.appendChild(ta);
-    ta.select();
-    try { document.execCommand('copy'); toast(msg); } catch (e) {}
-    document.body.removeChild(ta);
-  }
-
-  bindInstantButton($('copyCodeBtn'), () => {
-    copyText(netState.roomCode, 'Oda kodu kopyalandı: ' + netState.roomCode);
-  });
-  bindInstantButton($('copyLinkBtn'), () => {
-    const url = location.origin + location.pathname + '?room=' + netState.roomCode;
-    copyText(url, 'Davet linki panoya kopyalandı!');
-  });
-
-  /* =========================================================================
-   * 12. COUNTRY PICKING & GAME START FLOW
-   * ========================================================================= */
-  function updateGoButtonState() {
-    const goBtn = $('go');
-    if (netState.isOnlineTab && netState.active) {
-      const allReady = netState.players.length >= 1 && netState.players.every(p => p.country && p.ready);
-      if (netState.isHost) {
-        goBtn.disabled = !allReady;
-        goBtn.textContent = allReady
-          ? `👑 Oyunu Başlat (${netState.players.length} Oyuncu Hazır)`
-          : 'Tüm oyuncuların ülke seçip "Hazır" vermesi bekleniyor...';
-      } else {
-        goBtn.disabled = true;
-        goBtn.textContent = allReady
-          ? 'Herkes Hazır! Kurucunun başlatması bekleniyor...'
-          : 'Ülkeni seç ve yukarıdan "Hazır Ver" butonuna bas';
-      }
-      return;
-    }
-
-    if (!picked) {
-      goBtn.disabled = true;
-      goBtn.textContent = 'Bir ülke seç';
-    } else {
-      goBtn.disabled = false;
-      goBtn.textContent = picked.name + ' ile Başla';
-    }
-  }
-
-  function setPick(c) {
-    if (netState.active) {
-      const takenByOther = netState.players.some(p => p.id !== netState.myId && p.country === c.name);
-      if (takenByOther) {
-        toast(c.name + ' başka bir oyuncu tarafından seçilmiş!');
-        return;
-      }
-      picked = c;
-      if (netState.isHost) {
-        const me = netState.players.find(p => p.id === netState.myId);
-        if (me) me.country = c.name;
-        broadcastLobbyState();
-      } else {
-        netSend({ type: 'lobby_update', id: netState.myId, country: c.name });
-      }
-    } else {
-      picked = c;
-    }
-
-    updateGoButtonState();
-    fill($('q').value);
-    const el = [...document.querySelectorAll('#list button')].find(b => b.dataset.cname === c.name);
-    if (el) el.scrollIntoView({ block: 'nearest' });
-  }
-
-  const names = [...C].sort((a, b) => a.name.localeCompare(b.name));
-  function fill(q) {
-    const l = $('list');
-    l.innerHTML = '';
-    names.filter(c => c.name.toLowerCase().includes((q || '').toLowerCase())).forEach(c => {
-      const b = document.createElement('button');
-      b.dataset.cname = c.name;
-      const lobbyOwner = getLobbyCountryOwner(c.name);
-      if (c === picked) b.className = 'on';
-      const tag = lobbyOwner !== null
-        ? `<span class="badge" style="background:${col(lobbyOwner)}33;color:${col(lobbyOwner)}">${PAL[lobbyOwner].n}</span>`
-        : '';
-      b.innerHTML = `<span>${c.name}</span>${tag}`;
-      b.onclick = () => {
-        setPick(c);
-        v.k = Math.max(fitK, Math.min(6, 260 / c.sz));
-        v.x = W / 2 - c.x * v.k;
-        v.y = H / 2 - c.y * v.k;
-      };
-      l.appendChild(b);
-    });
-  }
-  $('q').oninput = e => fill(e.target.value);
-  fill('');
-
-  function startMatchFromState(initCountries) {
-    C.forEach(c => {
-      const st = initCountries[c.name];
-      if (st) {
-        c.owner = st.owner;
-        c.troops = st.troops;
-      } else {
-        c.owner = -1;
-        c.troops = 10;
-      }
-    });
-    armies = [];
-    links = [];
-    fGold = [0, 0, 0, 0, 0];
-    fLv = Array.from({ length: 5 }, () => ({ g: 0, cap: 0, spd: 0, inc: 0, fl: 0, ln: 0 }));
-    sel.clear();
-    aiT = 0;
-    speed = 1;
-    mode = 'play';
-    $('start').hidden = true;
-    $('reopenModalBtn').hidden = true;
-    $('netBadge').hidden = !netState.active;
-
-    const myC = C.find(c => c.owner === mySlot) || picked || C[0];
-    v.k = Math.max(fitK * 1.5, Math.min(5, 200 / myC.sz));
-    v.x = W / 2 - myC.x * v.k;
-    v.y = H / 2 - myC.y * v.k;
-    document.querySelectorAll('#ctl [data-s]').forEach(x => x.classList.toggle('on', x.dataset.s === '1'));
-    hud();
-  }
-
-  bindInstantButton($('go'), () => {
-    if (netState.isOnlineTab && netState.active) {
-      if (!netState.isHost) return;
-      const allReady = netState.players.every(p => p.country && p.ready);
-      if (!allReady) return;
-    } else if (!picked) {
-      return;
-    }
-
-    const initMap = {};
-    C.forEach(c => {
-      initMap[c.name] = { owner: -1, troops: Math.round(8 + Math.random() * 14) };
-    });
-
-    if (netState.isOnlineTab && netState.active) {
-      const takenSet = new Set();
-      netState.players.forEach(p => {
-        if (p.country && initMap[p.country]) {
-          initMap[p.country] = { owner: p.slot, troops: 45 };
-          takenSet.add(p.country);
-        }
-      });
-      // Fill remaining slots up to 5 with AI Empires if toggle is enabled
-      if (netState.fillBots) {
-        const usedSlots = new Set(netState.players.map(p => p.slot));
-        const pool = C.filter(c => !takenSet.has(c.name) && c.af > .4).sort(() => Math.random() - .5);
-        let pIdx = 0;
-        for (let s = 1; s <= 4; s++) {
-          if (!usedSlots.has(s) && pool[pIdx]) {
-            initMap[pool[pIdx].name] = { owner: s, troops: 45 };
-            pIdx++;
-          }
-        }
-      }
-      netSend({ type: 'game_start', initCountries: initMap, players: netState.players });
-      startMatchFromState(initMap);
-    } else {
-      mySlot = 0;
-      initMap[picked.name] = { owner: 0, troops: 45 };
-      const pool = C.filter(c => c !== picked && c.af > .4).sort(() => Math.random() - .5);
-      for (let i = 1; i <= 4; i++) {
-        initMap[pool[i - 1].name] = { owner: i, troops: 45 };
-      }
-      startMatchFromState(initMap);
-    }
-  });
-
-  bindInstantButton($('go2'), () => {
-    $('end').hidden = true;
-    $('start').hidden = false;
-    mode = 'pick';
-    C.forEach(c => { c.owner = -1; });
-    armies = [];
-    links = [];
-    v.k = fitK;
-    v.x = 0;
-    v.y = H / 2 - 430 * v.k;
-    fill($('q').value);
-    updateGoButtonState();
-  });
-
-  // Auto-join room if URL contains ?room=XXXXXX
-  const urlParams = new URLSearchParams(location.search);
-  const autoRoom = urlParams.get('room');
-  if (autoRoom) {
-    switchTab(true);
-    $('roomCodeInp').value = autoRoom.toUpperCase();
-    setTimeout(() => joinOnlineRoom(autoRoom), 250);
-  }
-
-  /* =========================================================================
-   * 13. MAIN GAME LOOP
-   * ========================================================================= */
-  let last = performance.now();
-  (function loop(t) {
-    const dt = Math.min(.1, (t - last) / 1000);
-    last = t;
-    if (mode === 'play') update(dt);
-    hudT += dt;
-    if (hudT > .2) {
-      hudT = 0;
-      hud();
-    }
-    draw();
-    requestAnimationFrame(loop);
-  })(last);
+let last=performance.now();
+(function loop(t){const dt=Math.min(.1,(t-last)/1000);last=t;
+ if(mode==='play'){if(role==='guest'){gameT+=dt;for(const a of armies)a.p+=dt/a.dur;armies=armies.filter(a=>a.p<1)}else{step(dt);if(role==='host'){bcT+=dt;if(bcT>.1){bcT=0;bcast(snap())}}}}
+ hudT+=dt;if(hudT>.2){hudT=0;if(mode==='play'||mode==='over')hud()}
+ draw();requestAnimationFrame(loop)})(last);
+/*TESTHOOK*/
 })();
-</script>
-</body>
-</html>
+</script></body></html>
